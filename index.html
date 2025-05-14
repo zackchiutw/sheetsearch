@@ -3,463 +3,6 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>產品查詢 App (響應式增強)</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        /* 自訂 iOS 風格樣式 */
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-            margin: 0;
-            background-color: #f0f0f0; /* iOS 背景灰 */
-            display: flex; 
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh; 
-            color: #333;
-            padding: 1rem; 
-            box-sizing: border-box;
-        }
-
-        .ios-app-container {
-            width: 100%; 
-            margin-left: auto; 
-            margin-right: auto;
-            background-color: #ffffff; 
-            border-radius: 20px; 
-            box-shadow: 0 8px 30px rgba(0,0,0,0.1);
-            overflow: hidden; 
-            display: flex;
-            flex-direction: column;
-
-            /* 手機優先：預設為類似手機的尺寸 */
-            max-width: 480px; /* 手機上的最大寬度 */
-            height: 100vh;    /* 在小螢幕上，讓容器盡可能佔滿視窗高度 */
-            max-height: 850px; /* 但也設定一個最大高度，避免在某些手機上過長 */
-        }
-
-        /* Small devices (landscape phones, tablets in portrait) - sm breakpoint (640px) */
-        @media (min-width: 640px) {
-            .ios-app-container {
-                max-width: 600px; /* 比手機稍寬 */
-                height: auto; /* 讓內容決定高度 */
-                min-height: 500px; /* 設定一個合理的最小高度 */
-                max-height: 90vh; /* 在較大螢幕上限制最大高度，上下留有空間 */
-                margin-top: 2rem;   /* 在上下增加一些外邊距 */
-                margin-bottom: 2rem;
-                border-radius: 24px; /* 圓角稍微調整 */
-                box-shadow: 0 12px 40px rgba(0,0,0,0.12); /* 陰影調整 */
-            }
-        }
-
-        /* Medium devices (tablets in landscape) - md breakpoint (768px) */
-        @media (min-width: 768px) {
-            .ios-app-container {
-                max-width: 720px; /* 對於平板橫向更寬一些 */
-            }
-        }
-
-        /* Large devices (desktops) - lg breakpoint (1024px) */
-        @media (min-width: 1024px) {
-            .ios-app-container {
-                max-width: 960px; /* 桌機上明顯更寬 */
-                border-radius: 28px; 
-            }
-            /* 在 PC 螢幕上，讓 .ios-list 的水平捲動軸軌道始終可見 */
-            .ios-list {
-                overflow-x: scroll; /* 改為 scroll 使捲動軸軌道常駐 */
-            }
-        }
-
-        /* Extra large devices (large desktops) - xl breakpoint (1280px) */
-        @media (min-width: 1280px) {
-            .ios-app-container {
-                max-width: 1140px; /* 在非常寬的螢幕上進一步增加寬度 */
-                border-radius: 32px; 
-            }
-             /* .ios-list 的 overflow-x: scroll 會從 lg 斷點繼承 */
-        }
-
-        .page {
-            width: 100%;
-            height: 100%;
-            display: flex;
-            flex-direction: column;
-        }
-
-        .ios-header {
-            background-color: #f8f8f8; 
-            padding: 12px 16px;
-            border-bottom: 1px solid #d1d1d1;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            min-height: 50px; 
-            flex-shrink: 0; 
-        }
-
-        .ios-header-title {
-            font-size: 1.1rem;
-            font-weight: 600;
-            color: #000;
-        }
-
-        .ios-content {
-            padding: 16px;
-            overflow-y: auto; 
-            flex-grow: 1;     
-            background-color: #f9f9f9;
-            -webkit-overflow-scrolling: touch; 
-        }
-
-        .ios-input {
-            width: 100%;
-            padding: 12px 15px;
-            border: 1px solid #e0e0e0;
-            border-radius: 8px;
-            font-size: 1rem;
-            margin-bottom: 16px;
-            box-shadow: inset 0 1px 2px rgba(0,0,0,0.05);
-        }
-        .ios-input:focus {
-            outline: none;
-            border-color: #007aff;
-            box-shadow: 0 0 0 2px rgba(0,122,255,0.2);
-        }
-
-        .ios-button {
-            background-color: #007aff;
-            color: white;
-            padding: 12px 20px;
-            border: none;
-            border-radius: 8px;
-            font-size: 1rem;
-            font-weight: 500;
-            cursor: pointer;
-            text-align: center;
-            transition: background-color 0.2s;
-            width: 100%;
-        }
-        .ios-button:hover {
-            background-color: #005bb5;
-        }
-        
-        .ios-list {
-            /* 預設為 auto，在小螢幕上只有內容溢出時才顯示捲動軸 */
-            overflow-x: auto; 
-            -webkit-overflow-scrolling: touch; 
-            border-radius: 8px; 
-            background-color: #fff; 
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05); 
-            /* 為了讓捲動條更明顯，可以考慮添加一些 padding-bottom，
-               但這會佔用一些垂直空間。或者使用自訂捲動條樣式（較複雜）。
-               例如：padding-bottom: 8px; (如果捲動條比較細不明顯時可以嘗試)
-            */
-        }
-
-        .ios-list table {
-            width: 100%; 
-            border-collapse: collapse; 
-        }
-        .ios-list th, .ios-list td {
-            padding: 10px 12px;
-            text-align: left;
-            border-bottom: 1px solid #e0e0e0;
-            font-size: 0.9rem;
-            white-space: nowrap; 
-        }
-        .ios-list th {
-            background-color: #f0f0f0;
-            font-weight: 500;
-            color: #555;
-            position: sticky; 
-            top: 0; 
-            z-index: 1; 
-        }
-        .ios-list td {
-            background-color: #fff;
-            color: #333;
-        }
-        .ios-list tr:last-child td {
-            border-bottom: none; 
-        }
-        .ios-list .no-results {
-            padding: 20px;
-            text-align: center;
-            color: #888;
-            background-color: #fff;
-            white-space: normal; 
-        }
-
-        .hidden {
-            display: none !important;
-        }
-        
-        .loader {
-            border: 4px solid #f3f3f3;
-            border-top: 4px solid #007aff;
-            border-radius: 50%;
-            width: 30px;
-            height: 30px;
-            animation: spin 1s linear infinite;
-            margin: 20px auto;
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-    </style>
-</head>
-<body>
-    <div id="app" class="ios-app-container">
-        <div id="loginPage" class="page p-8 flex flex-col justify-center">
-            <h1 class="text-3xl font-bold text-center mb-8 text-gray-800">產品查詢系統</h1>
-            <input type="text" id="username" placeholder="使用者名稱 (任意輸入)" class="ios-input mb-4">
-            <input type="password" id="password" placeholder="密碼 (任意輸入)" class="ios-input mb-6">
-            <button id="loginButton" class="ios-button">登入</button>
-        </div>
-
-        <div id="mainPage" class="page hidden">
-            <header class="ios-header">
-                <h1 class="ios-header-title">產品查詢</h1>
-                <button id="logoutButton" class="text-sm text-red-500 hover:text-red-700 font-medium">登出</button>
-            </header>
-            <main class="ios-content">
-                <div class="mb-4">
-                    <input type="text" id="searchInput" placeholder="輸入關鍵字搜尋產品..." class="ios-input">
-                </div>
-                <div id="loadingIndicator" class="hidden">
-                    <div class="loader"></div>
-                    <p class="text-center text-gray-600">正在載入資料...</p>
-                </div>
-                <div id="errorMessage" class="hidden p-4 text-center text-red-600 bg-red-100 rounded-lg"></div>
-                <div id="resultsList" class="ios-list">
-                    </div>
-            </main>
-        </div>
-    </div>
-
-    <script>
-        // Google Sheet 設定
-        const SHEET_ID = '1sxAYg3k2ZDV8zulv67U1O9TS5NF5cuMfuisHWz8FXkU';
-        const SHEET_NAME = '20250514'; // 請確保這是您正確的工作表名稱
-        const API_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(SHEET_NAME)}`;
-
-        // DOM 元素 (以下 JavaScript 邏輯保持不變)
-        const loginPage = document.getElementById('loginPage');
-        const mainPage = document.getElementById('mainPage');
-        const loginButton = document.getElementById('loginButton');
-        const logoutButton = document.getElementById('logoutButton');
-        const searchInput = document.getElementById('searchInput');
-        const resultsList = document.getElementById('resultsList');
-        const loadingIndicator = document.getElementById('loadingIndicator');
-        const errorMessage = document.getElementById('errorMessage');
-
-        if (!loginPage || !mainPage || !loginButton || !errorMessage || !loadingIndicator || !resultsList) {
-            const missingElements = [
-                !loginPage && "loginPage",
-                !mainPage && "mainPage",
-                !loginButton && "loginButton",
-                !errorMessage && "errorMessage",
-                !loadingIndicator && "loadingIndicator",
-                !resultsList && "resultsList"
-            ].filter(Boolean).join(", ");
-            const criticalErrorMsg = `應用程式初始化失敗：一個或多個必要的頁面元素未找到 (${missingElements})。請檢查 HTML 中的 ID 是否與 JavaScript 中的一致，並查看瀏覽器控制台。`;
-            console.error(criticalErrorMsg);
-        }
-
-        let sheetData = { headers: [], data: [] };
-
-        function parseCSVLine(line) {
-            const regex = /(?:\"([^\"]*(?:\"\"[^\"]*)*)\"|([^\",]+))/g;
-            let values = [];
-            let match;
-            while (match = regex.exec(line)) {
-                if (match[1] !== undefined) {
-                    values.push(match[1].replace(/\"\"/g, '\"'));
-                } else {
-                    values.push(match[2]);
-                }
-            }
-            return values;
-        }
-
-        function parseCSV(csvText) {
-            if (typeof csvText !== 'string') {
-                console.error("parseCSV 接收到的不是字串:", csvText);
-                return { headers: [], data: [] };
-            }
-            const lines = csvText.trim().split('\n');
-            const data = [];
-            let headers = [];
-
-            if (lines.length > 0) {
-                headers = parseCSVLine(lines[0]);
-                for (let i = 1; i < lines.length; i++) {
-                    if (lines[i].trim() === "") continue;
-                    const cells = parseCSVLine(lines[i]);
-                    if (cells.length === headers.length && cells.some(cell => cell && cell.trim() !== "")) {
-                        let rowObject = {};
-                        headers.forEach((header, index) => {
-                            rowObject[header] = cells[index] || '';
-                        });
-                        data.push(rowObject);
-                    } else {
-                        console.warn(`parseCSV: 第 ${i+1} 行資料欄位數 (${cells.length}) 與表頭欄位數 (${headers.length}) 不符，或為空行，已跳過:`, lines[i]);
-                    }
-                }
-            }
-            return { headers, data };
-        }
-
-        async function fetchSheetData() {
-            console.log('fetchSheetData: 函數已呼叫。');
-            if (!loadingIndicator || !errorMessage || !resultsList) {
-                console.error('fetchSheetData: 必要的 UI 元素 (loadingIndicator, errorMessage, resultsList) 未找到!');
-                return;
-            }
-
-            loadingIndicator.classList.remove('hidden');
-            errorMessage.classList.add('hidden');
-            resultsList.innerHTML = '';
-            
-            try {
-                console.log('fetchSheetData: 開始 fetch 資料從 API_URL:', API_URL);
-                const response = await fetch(API_URL);
-                console.log('fetchSheetData: fetch 請求完成，回應狀態:', response.status, response.statusText);
-
-                if (!response.ok) {
-                    const errorText = await response.text(); 
-                    console.error('fetchSheetData: 伺服器回應錯誤:', response.status, response.statusText, errorText);
-                    throw new Error(`無法載入資料: ${response.status} ${response.statusText}. 伺服器訊息: ${errorText.substring(0,100)}...`);
-                }
-                const csvText = await response.text();
-                console.log('fetchSheetData: CSV 文字資料已獲取，長度:', csvText.length);
-                
-                sheetData = parseCSV(csvText);
-                console.log('fetchSheetData: CSV 解析完成。表頭:', sheetData.headers, '資料筆數:', sheetData.data.length);
-
-                if (!sheetData.headers || sheetData.headers.length === 0) {
-                     console.error('fetchSheetData: 無法解析表頭或工作表為空。');
-                     throw new Error('無法解析表頭或工作表為空。請檢查工作表內容和 CSV 格式。');
-                }
-                if (sheetData.data.length === 0) {
-                    console.log('fetchSheetData: 工作表中目前沒有資料。');
-                    resultsList.innerHTML = '<div class="no-results">工作表中目前沒有資料。</div>';
-                } else {
-                    console.log('fetchSheetData: 資料載入成功，準備顯示結果。');
-                    displayResults(sheetData.data);
-                }
-            } catch (error) {
-                console.error("fetchSheetData: 載入 Google Sheet 資料時發生錯誤 (詳細資訊):", error);
-                if (errorMessage) {
-                    errorMessage.textContent = `錯誤: ${error.message} 請確認 Google Sheet ID、工作表名稱是否正確、共用權限已設為「知道連結的任何人皆可檢視」，並檢查您的網路連線。詳細錯誤請見瀏覽器控制台。`;
-                    errorMessage.classList.remove('hidden');
-                }
-                if (resultsList) {
-                    resultsList.innerHTML = '<div class="no-results">無法載入產品資料。</div>';
-                }
-            } finally {
-                console.log('fetchSheetData: finally 區塊執行，隱藏載入指示器。');
-                if (loadingIndicator) {
-                    loadingIndicator.classList.add('hidden');
-                }
-            }
-        }
-
-        function filterAndDisplayData() {
-            const searchTerm = searchInput.value.toLowerCase().trim();
-            if (!sheetData.data || sheetData.data.length === 0) {
-                if (loadingIndicator && !loadingIndicator.classList.contains('hidden')) {
-                    return;
-                }
-                resultsList.innerHTML = '<div class="no-results">沒有可供搜尋的資料。</div>';
-                return;
-            }
-
-            const filteredData = sheetData.data.filter(row => {
-                if (!searchTerm) return true;
-                return Object.values(row).some(value =>
-                    String(value).toLowerCase().includes(searchTerm)
-                );
-            });
-            displayResults(filteredData);
-        }
-        
-        function escapeHTML(str) {
-            if (str === null || str === undefined) return '';
-            return String(str)
-                .replace(/&/g, "&amp;")
-                .replace(/</g, "&lt;")
-                .replace(/>/g, "&gt;")
-                .replace(/"/g, "&quot;")
-                .replace(/'/g, "&#039;");
-        }
-
-        function displayResults(dataToDisplay) {
-            resultsList.innerHTML = ''; 
-            if (errorMessage) errorMessage.classList.add('hidden');
-
-            if (dataToDisplay.length === 0) {
-                resultsList.innerHTML = '<div class="no-results">未找到符合條件的產品。</div>';
-                return;
-            }
-
-            const table = document.createElement('table');
-            const thead = document.createElement('thead');
-            let headerRowHtml = '<tr>';
-            sheetData.headers.forEach(header => {
-                headerRowHtml += `<th>${escapeHTML(header)}</th>`;
-            });
-            headerRowHtml += '</tr>';
-            thead.innerHTML = headerRowHtml;
-            table.appendChild(thead);
-
-            const tbody = document.createElement('tbody');
-            dataToDisplay.forEach(rowObject => {
-                let rowHtml = '<tr>';
-                sheetData.headers.forEach(header => {
-                    const cellValue = rowObject[header];
-                    rowHtml += `<td>${escapeHTML(cellValue)}</td>`;
-                });
-                rowHtml += '</tr>';
-                tbody.innerHTML += rowHtml;
-            });
-            table.appendChild(tbody);
-            resultsList.appendChild(table);
-        }
-
-        if (loginButton) {
-            loginButton.addEventListener('click', () => {
-                console.log('事件監聽: 登入按鈕被點擊。');
-                if (!loginPage || !mainPage) {
-                    console.error('事件監聽 (登入): loginPage 或 mainPage 元素未找到!');
-                    return;
-                }
-                loginPage.classList.add('hidden');
-                mainPage.classList.remove('hidden');
-                console.log('事件監聽 (登入): 頁面已切換，準備呼叫 fetchSheetData。');
-                fetchSheetData();
-            });
-        }
-        
-        if (logoutButton) {
-            logoutButton.addEventListener('click', () => {
-                console.log('事件監聽: 登出按鈕被點擊。');
-                if (!mainPage || !loginPage) {
-                    console.error('事件監聽 (登出): mainPage 或 loginPage 元素未找到!');
-                    return;
-                }
-                mainPage.classList.add('hidden');
-                loginPage.classList.remove('hidden');
-                if (searchInput) searchInput.value = '';
-                if (resultsList) resultsList.innerHTML = '';
-                sheetData = { headers: [], data: [] };<!DOCTYPE html>
-<html lang="zh-TW">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>產品查詢 App (Auth0 登入)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.auth0.com/js/auth0-spa-js/2.1/auth0-spa-js.production.js"></script>
@@ -617,8 +160,7 @@
                     <div class="loader"></div>
                     <p class="text-center text-gray-600">正在載入資料...</p>
                 </div>
-                <div id="errorMessage" class="hidden p-4 text-center text-red-600 bg-red-100 rounded-lg"></div>
-                <div id="resultsList" class="ios-list">
+                <div id="errorMessage" class="hidden p-4 text-center text-red-600 bg-red-100 rounded-lg"></div> <div id="resultsList" class="ios-list">
                     </div>
             </main>
         </div>
@@ -633,20 +175,20 @@
         const searchInput = document.getElementById('searchInput');
         const resultsList = document.getElementById('resultsList');
         const loadingIndicator = document.getElementById('loadingIndicator');
-        const generalErrorMessage = document.getElementById('errorMessage'); // 用於 Google Sheet 相關錯誤
-        const authErrorDisplay = document.getElementById('authError'); // 用於 Auth0 相關錯誤
-        // const userProfileElement = document.getElementById('userProfile'); // 如果要顯示使用者資訊
+        const generalErrorMessage = document.getElementById('errorMessage');
+        const authErrorDisplay = document.getElementById('authError');
+        // const userProfileElement = document.getElementById('userProfile');
 
         // Google Sheet 設定
         const SHEET_ID = '1sxAYg3k2ZDV8zulv67U1O9TS5NF5cuMfuisHWz8FXkU';
-        const SHEET_NAME = '20250514'; // 請確保這是您正確的工作表名稱
+        const SHEET_NAME = '20250514';
         const API_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(SHEET_NAME)}`;
         let sheetData = { headers: [], data: [] };
 
         // Auth0 設定 - !!! 請務必替換成您自己的 Auth0 Domain 和 Client ID !!!
-        const auth0Domain = 'dev-mcspzgwngm55kx82.us.auth0.com';        // 例如: 'your-tenant.auth0.com'
-        const auth0ClientId = 'cB8W5yIJAcqDSizDY3hvwd3J0ZrKPqRb'; // 從 Auth0 Application Settings 取得
-        const auth0RedirectUri = 'https://sheetseekerey.netlify.app'; // 例如: https://your-site.netlify.app 或 http://localhost:5500
+        const auth0Domain = 'YOUR_AUTH0_DOMAIN';        // 例如: 'your-tenant.auth0.com'
+        const auth0ClientId = 'YOUR_AUTH0_CLIENT_ID'; // 從 Auth0 Application Settings 取得
+        const auth0RedirectUri = window.location.origin;
 
         let auth0Client = null;
 
@@ -658,8 +200,9 @@
                     clientId: auth0ClientId,
                     authorizationParams: {
                         redirect_uri: auth0RedirectUri,
-                        // scope: 'openid profile email' // 可選，請求更多使用者資訊
-                    }
+                        // scope: 'openid profile email' 
+                    },
+                    cacheLocation: 'localstorage' // 建議 SPA 使用 localstorage
                 });
                 console.log('Auth0 client configured successfully.');
                 return auth0Client;
@@ -675,7 +218,7 @@
 
         async function updateUI() {
             if (!auth0Client) {
-                console.warn('Auth0 client not initialized yet for updateUI');
+                console.warn('Auth0 client not initialized yet for updateUI. Showing login page.');
                 showLoginPage();
                 return;
             }
@@ -691,7 +234,7 @@
                     //     userProfileElement.textContent = `歡迎, ${user.name || user.email}!`;
                     // }
                 } else {
-                    console.log('User is not authenticated.');
+                    console.log('User is not authenticated. Showing login page.');
                     showLoginPage();
                 }
             } catch (e) {
@@ -721,7 +264,7 @@
             }
         }
 
-        function doLogout() { // 重新命名以避免與全域 logout 衝突 (雖然在此 scope 不太可能)
+        function doLogout() {
             if (!auth0Client) {
                 console.error('Auth0 client not initialized for logout');
                 return;
@@ -740,11 +283,12 @@
 
         // --- 頁面顯示邏輯 ---
         function showLoginPage() {
+            console.log("Showing Login Page"); // 增加日誌
             if (loginPage && mainPage) {
                 loginPage.classList.remove('hidden');
                 mainPage.classList.add('hidden');
             }
-            if (authErrorDisplay) authErrorDisplay.classList.add('hidden'); // 切换页面时隐藏Auth错误
+            if (authErrorDisplay) authErrorDisplay.classList.add('hidden');
             if (generalErrorMessage) generalErrorMessage.classList.add('hidden');
             if (resultsList) resultsList.innerHTML = '';
             if (searchInput) searchInput.value = '';
@@ -752,6 +296,7 @@
         }
 
         function showMainPage(user) {
+            console.log("Showing Main Page for user:", user ? (user.name || user.email) : "Unknown"); // 增加日誌
             if (loginPage && mainPage) {
                 loginPage.classList.add('hidden');
                 mainPage.classList.remove('hidden');
@@ -759,7 +304,7 @@
             }
         }
 
-        // --- Google Sheet 資料處理函數 ---
+        // --- Google Sheet 資料處理函數 (保持不變) ---
         function parseCSVLine(line) {
             const regex = /(?:\"([^\"]*(?:\"\"[^\"]*)*)\"|([^\",]+))/g;
             let values = []; let match;
@@ -863,15 +408,14 @@
         // --- 應用程式初始化 ---
         window.addEventListener('load', async () => {
             console.log('Window loaded. Configuring Auth0 client...');
-            // 檢查必要的 Auth0 設定是否已填寫
             if (auth0Domain === 'YOUR_AUTH0_DOMAIN' || auth0ClientId === 'YOUR_AUTH0_CLIENT_ID') {
                 console.error("Auth0 Domain 或 Client ID 尚未設定。請在 JavaScript 中填寫這些值。");
                 if (authErrorDisplay) {
                     authErrorDisplay.textContent = "Auth0 設定不完整，請聯繫管理員。";
                     authErrorDisplay.classList.remove('hidden');
                 }
-                showLoginPage(); // 顯示登入頁面，但登入功能可能無法正常運作
-                return; // 阻止進一步初始化
+                showLoginPage(); 
+                return; 
             }
 
             auth0Client = await configureClient();
@@ -883,7 +427,7 @@
                     try {
                         await auth0Client.handleRedirectCallback();
                         console.log('Redirect callback handled.');
-                        window.history.replaceState({}, document.title, window.location.pathname); // 清理 URL
+                        window.history.replaceState({}, document.title, window.location.pathname);
                     } catch (e) {
                         console.error('Error handling redirect callback:', e);
                         if (authErrorDisplay) {
@@ -894,27 +438,9 @@
                 }
                 await updateUI();
             } else {
-                showLoginPage(); // 如果 client 初始化失敗
+                showLoginPage(); 
             }
         });
-    </script>
-</body>
-</html>
-
-                if (errorMessage) errorMessage.classList.add('hidden');
-            });
-        }
-        
-        if (searchInput) {
-            let searchTimeout;
-            searchInput.addEventListener('input', () => {
-                clearTimeout(searchTimeout);
-                searchTimeout = setTimeout(() => {
-                    console.log('事件監聽 (搜尋): 搜尋輸入框內容變更，執行 filterAndDisplayData。');
-                    filterAndDisplayData();
-                }, 300);
-            });
-        }
     </script>
 </body>
 </html>
