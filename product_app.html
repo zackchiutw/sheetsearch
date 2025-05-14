@@ -55,7 +55,6 @@
         @media (min-width: 768px) {
             .ios-app-container {
                 max-width: 720px; /* 對於平板橫向更寬一些 */
-                /* 其他如 border-radius, box-shadow 等如果需要調整可在此處覆寫，否則繼承自 sm 斷點 */
             }
         }
 
@@ -63,8 +62,11 @@
         @media (min-width: 1024px) {
             .ios-app-container {
                 max-width: 960px; /* 桌機上明顯更寬 */
-                border-radius: 28px; /* 配合較大尺寸調整圓角 */
-                 /* height, min-height, max-height, margin-top, margin-bottom 會從 sm 斷點繼承 */
+                border-radius: 28px; 
+            }
+            /* 在 PC 螢幕上，讓 .ios-list 的水平捲動軸軌道始終可見 */
+            .ios-list {
+                overflow-x: scroll; /* 改為 scroll 使捲動軸軌道常駐 */
             }
         }
 
@@ -72,17 +74,10 @@
         @media (min-width: 1280px) {
             .ios-app-container {
                 max-width: 1140px; /* 在非常寬的螢幕上進一步增加寬度 */
-                border-radius: 32px; /* 調整圓角 */
-                /* height, min-height, max-height, margin-top, margin-bottom 會從 sm 斷點繼承 */
+                border-radius: 32px; 
             }
+             /* .ios-list 的 overflow-x: scroll 會從 lg 斷點繼承 */
         }
-        /* 針對超寬螢幕，可以考慮移除 max-width 或使用百分比，但會失去 app 的感覺 */
-        /* @media (min-width: 1600px) {
-            .ios-app-container {
-                max-width: 1400px; // 或者 max-width: 80%;
-            }
-        } */
-
 
         .page {
             width: 100%;
@@ -149,11 +144,16 @@
         }
         
         .ios-list {
+            /* 預設為 auto，在小螢幕上只有內容溢出時才顯示捲動軸 */
             overflow-x: auto; 
             -webkit-overflow-scrolling: touch; 
             border-radius: 8px; 
             background-color: #fff; 
             box-shadow: 0 2px 4px rgba(0,0,0,0.05); 
+            /* 為了讓捲動條更明顯，可以考慮添加一些 padding-bottom，
+               但這會佔用一些垂直空間。或者使用自訂捲動條樣式（較複雜）。
+               例如：padding-bottom: 8px; (如果捲動條比較細不明顯時可以嘗試)
+            */
         }
 
         .ios-list table {
