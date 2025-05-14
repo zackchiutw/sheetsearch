@@ -186,9 +186,9 @@
         let sheetData = { headers: [], data: [] };
 
         // Auth0 設定 - !!! 請務必替換成您自己的 Auth0 Domain 和 Client ID !!!
-        const auth0Domain = 'YOUR_AUTH0_DOMAIN';        // 例如: 'your-tenant.auth0.com'
-        const auth0ClientId = 'YOUR_AUTH0_CLIENT_ID'; // 從 Auth0 Application Settings 取得
-        const auth0RedirectUri = window.location.origin;
+        const auth0Domain = 'dev-mcspzgwngm55kx82.us.auth0.com';        // 例如: 'your-tenant.auth0.com'
+        const auth0ClientId = 'cB8W5yIJAcqDSizDY3hvwd3J0ZrKPqRb'; // 從 Auth0 Application Settings 取得
+        const auth0RedirectUri = 'https://sheetseekerey.netlify.app/';
 
         let auth0Client = null;
 
