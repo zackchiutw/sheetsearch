@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>產品查詢 App</title>
+    <title>產品查詢 App (響應式)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         /* 自訂 iOS 風格樣式 */
@@ -11,24 +11,53 @@
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
             margin: 0;
             background-color: #f0f0f0; /* iOS 背景灰 */
-            display: flex;
+            display: flex; /* 使用 Flexbox 讓容器垂直和水平居中 */
             justify-content: center;
             align-items: center;
-            min-height: 100vh;
+            min-height: 100vh; /* 確保 body 至少和視窗一樣高 */
             color: #333;
+            padding: 1rem; /* 在 body 周圍添加一些間距，避免容器緊貼邊緣 */
+            box-sizing: border-box;
         }
 
         .ios-app-container {
-            width: 100%;
-            max-width: 480px; /* 模擬手機寬度 */
-            height: 100vh;
-            max-height: 800px; /* 模擬手機高度 */
+            width: 100%; /* 容器寬度佔滿父元素 (body 的 padding 內) */
+            margin-left: auto; /* 自動外邊距實現水平居中 */
+            margin-right: auto;
             background-color: #ffffff; /* iOS 常用白色背景 */
             border-radius: 20px; /* iOS 圓角風格 */
             box-shadow: 0 8px 30px rgba(0,0,0,0.1);
-            overflow: hidden;
+            overflow: hidden; /* 隱藏超出圓角的內容 */
             display: flex;
             flex-direction: column;
+
+            /* 手機優先：預設為類似手機的尺寸 */
+            max-width: 480px; /* 手機上的最大寬度 */
+            height: 100vh;    /* 在小螢幕上，讓容器盡可能佔滿視窗高度 */
+            max-height: 850px; /* 但也設定一個最大高度，避免在某些手機上過長 */
+        }
+
+        /* 中等螢幕及以上 (例如：平板、較大的手機橫向模式) */
+        @media (min-width: 640px) { /* Tailwind sm breakpoint */
+            .ios-app-container {
+                max-width: 520px; /* 稍微增加最大寬度 */
+                /* 在較大螢幕上，讓內容決定高度，而不是強制佔滿視窗 */
+                height: auto;
+                min-height: 500px; /* 設定一個合理的最小高度 */
+                max-height: 90vh; /* 最大高度為視窗高度的90%，上下留有空間 */
+                margin-top: 2rem;   /* 在上下增加一些外邊距 */
+                margin-bottom: 2rem;
+                border-radius: 24px; /* 圓角稍微調整 */
+                box-shadow: 0 12px 40px rgba(0,0,0,0.12); /* 陰影調整 */
+            }
+        }
+
+        /* 大型螢幕 (例如：桌上型電腦) */
+        @media (min-width: 1024px) { /* Tailwind lg breakpoint */
+            .ios-app-container {
+                max-width: 580px; /* 桌機上可以再寬一些，但仍保持 App 的感覺 */
+                border-radius: 28px;
+            }
         }
 
         .page {
@@ -45,7 +74,8 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            min-height: 50px;
+            min-height: 50px; /* 導覽列最小高度 */
+            flex-shrink: 0; /* 防止頭部在 flex 佈局中被壓縮 */
         }
 
         .ios-header-title {
@@ -56,32 +86,33 @@
 
         .ios-content {
             padding: 16px;
-            overflow-y: auto;
-            flex-grow: 1;
-            background-color: #f9f9f9; /* 內容區域稍暗的背景 */
+            overflow-y: auto; /* 內容超出時垂直滾動 */
+            flex-grow: 1;     /* 佔據剩餘的垂直空間 */
+            background-color: #f9f9f9;
+            -webkit-overflow-scrolling: touch; /* iOS 上流暢滾動 */
         }
 
         .ios-input {
             width: 100%;
             padding: 12px 15px;
             border: 1px solid #e0e0e0;
-            border-radius: 8px; /* iOS 輸入框圓角 */
+            border-radius: 8px;
             font-size: 1rem;
             margin-bottom: 16px;
             box-shadow: inset 0 1px 2px rgba(0,0,0,0.05);
         }
         .ios-input:focus {
             outline: none;
-            border-color: #007aff; /* iOS 藍色高亮 */
+            border-color: #007aff;
             box-shadow: 0 0 0 2px rgba(0,122,255,0.2);
         }
 
         .ios-button {
-            background-color: #007aff; /* iOS 主要按鈕藍色 */
+            background-color: #007aff;
             color: white;
             padding: 12px 20px;
             border: none;
-            border-radius: 8px; /* iOS 按鈕圓角 */
+            border-radius: 8px;
             font-size: 1rem;
             font-weight: 500;
             cursor: pointer;
@@ -100,46 +131,57 @@
             background-color: #dcdce0;
         }
 
+        /* 表格結果列表的容器 */
+        .ios-list {
+            overflow-x: auto; /* 當表格內容超出容器寬度時，允許水平滾動 */
+            -webkit-overflow-scrolling: touch; /* iOS 上流暢滾動 */
+            border-radius: 8px; /* 為滾動區域添加圓角 */
+            background-color: #fff; /* 給列表一個背景色，避免滾動時下方內容透出 */
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05); /* 給列表輕微的陰影 */
+        }
 
         .ios-list table {
-            width: 100%;
-            border-collapse: collapse;
-            border-radius: 8px;
-            overflow: hidden; /* 確保圓角對 table 生效 */
+            width: 100%; /* 表格寬度充滿其容器 (.ios-list) */
+            /* min-width: 500px; */ /* 可選：為表格設定一個最小寬度，防止欄位過於擁擠。如果設定，則在小螢幕上一定會觸發水平滾動 */
+            border-collapse: collapse; /* 合併儲存格邊框 */
         }
         .ios-list th, .ios-list td {
             padding: 10px 12px;
             text-align: left;
             border-bottom: 1px solid #e0e0e0;
             font-size: 0.9rem;
+            white-space: nowrap; /* 防止儲存格內容換行，確保橫向滾動時格式正確 */
         }
         .ios-list th {
-            background-color: #f0f0f0; /* 表頭背景 */
+            background-color: #f0f0f0;
             font-weight: 500;
             color: #555;
+            position: sticky; /* 讓表頭在垂直滾動時固定 (如果 .ios-content 滾動) */
+            top: 0; /* 配合 sticky 定位 */
+            z-index: 1; /* 確保表頭在其他內容之上 */
         }
         .ios-list td {
             background-color: #fff;
             color: #333;
         }
         .ios-list tr:last-child td {
-            border-bottom: none;
+            border-bottom: none; /* 最後一行的儲存格移除底部邊框 */
         }
         .ios-list .no-results {
             padding: 20px;
             text-align: center;
             color: #888;
             background-color: #fff;
+            white-space: normal; /* 允許 "無結果" 的訊息換行 */
         }
 
         .hidden {
             display: none !important;
         }
         
-        /* 簡單的載入動畫 */
         .loader {
-            border: 4px solid #f3f3f3; /* Light grey */
-            border-top: 4px solid #007aff; /* Blue */
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #007aff;
             border-radius: 50%;
             width: 30px;
             height: 30px;
@@ -186,7 +228,7 @@
     <script>
         // Google Sheet 設定
         const SHEET_ID = '1sxAYg3k2ZDV8zulv67U1O9TS5NF5cuMfuisHWz8FXkU';
-        const SHEET_NAME = '20250514';
+        const SHEET_NAME = '20250514'; // 請確保這是您正確的工作表名稱
         const API_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(SHEET_NAME)}`;
 
         // DOM 元素
@@ -199,17 +241,10 @@
         const loadingIndicator = document.getElementById('loadingIndicator');
         const errorMessage = document.getElementById('errorMessage');
 
-        // 偵錯：檢查 DOM 元素是否正確獲取
         console.log('DOM Element - loginPage:', loginPage);
         console.log('DOM Element - mainPage:', mainPage);
         console.log('DOM Element - loginButton:', loginButton);
-        console.log('DOM Element - logoutButton:', logoutButton);
-        console.log('DOM Element - searchInput:', searchInput);
-        console.log('DOM Element - resultsList:', resultsList);
-        console.log('DOM Element - loadingIndicator:', loadingIndicator);
-        console.log('DOM Element - errorMessage:', errorMessage);
-
-        // 檢查是否有任何關鍵元素未找到
+        // ... (其餘的 console.log 和 JavaScript 邏輯保持不變) ...
         if (!loginPage || !mainPage || !loginButton || !errorMessage || !loadingIndicator || !resultsList) {
             const missingElements = [
                 !loginPage && "loginPage",
@@ -222,13 +257,11 @@
             
             const criticalErrorMsg = `應用程式初始化失敗：一個或多個必要的頁面元素未找到 (${missingElements})。請檢查 HTML 中的 ID 是否與 JavaScript 中的一致，並查看瀏覽器控制台。`;
             console.error(criticalErrorMsg);
-            alert(criticalErrorMsg); // 使用 alert 以確保使用者看到此嚴重錯誤
+            // alert(criticalErrorMsg); // 避免在生產環境中使用 alert
         }
 
+        let sheetData = { headers: [], data: [] };
 
-        let sheetData = { headers: [], data: [] }; // 用於儲存已載入的資料
-
-        // --- CSV 解析函數 ---
         function parseCSVLine(line) {
             const regex = /(?:\"([^\"]*(?:\"\"[^\"]*)*)\"|([^\",]+))/g;
             let values = [];
@@ -246,7 +279,7 @@
         function parseCSV(csvText) {
             if (typeof csvText !== 'string') {
                 console.error("parseCSV 接收到的不是字串:", csvText);
-                return { headers: [], data: [] }; // 返回空物件以避免後續錯誤
+                return { headers: [], data: [] };
             }
             const lines = csvText.trim().split('\n');
             const data = [];
@@ -271,12 +304,11 @@
             return { headers, data };
         }
 
-        // --- 資料處理函數 ---
         async function fetchSheetData() {
             console.log('fetchSheetData: 函數已呼叫。');
             if (!loadingIndicator || !errorMessage || !resultsList) {
                 console.error('fetchSheetData: 必要的 UI 元素 (loadingIndicator, errorMessage, resultsList) 未找到!');
-                alert('資料載入元件初始化錯誤，請檢查瀏覽器控制台。');
+                // alert('資料載入元件初始化錯誤，請檢查瀏覽器控制台。'); // 避免 alert
                 return;
             }
 
@@ -290,16 +322,15 @@
                 console.log('fetchSheetData: fetch 請求完成，回應狀態:', response.status, response.statusText);
 
                 if (!response.ok) {
-                    const errorText = await response.text(); // 嘗試讀取錯誤回應內容
+                    const errorText = await response.text(); 
                     console.error('fetchSheetData: 伺服器回應錯誤:', response.status, response.statusText, errorText);
                     throw new Error(`無法載入資料: ${response.status} ${response.statusText}. 伺服器訊息: ${errorText.substring(0,100)}...`);
                 }
                 const csvText = await response.text();
                 console.log('fetchSheetData: CSV 文字資料已獲取，長度:', csvText.length);
-                if (csvText.length < 1000) { // 記錄較短的 CSV 內容以供偵錯
+                if (csvText.length < 1000) { 
                     console.log('fetchSheetData: CSV 內容 (前1000字元):', csvText.substring(0,1000));
                 }
-
 
                 sheetData = parseCSV(csvText);
                 console.log('fetchSheetData: CSV 解析完成。表頭:', sheetData.headers, '資料筆數:', sheetData.data.length);
@@ -322,7 +353,6 @@
                     errorMessage.classList.remove('hidden');
                 } else {
                     console.error("fetchSheetData: 'errorMessage' 元素未找到，無法在頁面顯示錯誤訊息。");
-                    alert(`發生錯誤: ${error.message} 且無法顯示於頁面。請檢查瀏覽器控制台。`);
                 }
                 if (resultsList) {
                     resultsList.innerHTML = '<div class="no-results">無法載入產品資料。</div>';
@@ -366,7 +396,7 @@
 
         function displayResults(dataToDisplay) {
             resultsList.innerHTML = ''; 
-            errorMessage.classList.add('hidden');
+            if (errorMessage) errorMessage.classList.add('hidden');
 
             if (dataToDisplay.length === 0) {
                 resultsList.innerHTML = '<div class="no-results">未找到符合條件的產品。</div>';
@@ -397,13 +427,11 @@
             resultsList.appendChild(table);
         }
 
-        // --- 事件監聽 ---
         if (loginButton) {
             loginButton.addEventListener('click', () => {
                 console.log('事件監聽: 登入按鈕被點擊。');
                 if (!loginPage || !mainPage) {
                     console.error('事件監聽 (登入): loginPage 或 mainPage 元素未找到!');
-                    alert('頁面切換錯誤，請檢查瀏覽器控制台。');
                     return;
                 }
                 loginPage.classList.add('hidden');
@@ -445,7 +473,6 @@
         } else {
             console.error("事件監聽: 'searchInput' 未找到，無法附加輸入事件。");
         }
-
     </script>
 </body>
 </html>
