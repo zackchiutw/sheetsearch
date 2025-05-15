@@ -3,7 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>產品查詢 App (Auth0 登入)</title>
+    <title>產品查詢 App (Auth0 登入 - 自動載入工作表按鈕)</title>
+
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#007aff">
+
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="產品查詢">
+    <link rel="apple-touch-icon" href="icons/apple-touch-icon.png"> 
+
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.auth0.com/js/auth0-spa-js/2.1/auth0-spa-js.production.js"></script>
     <style>
@@ -53,13 +62,18 @@
                 max-width: 720px; 
             }
         }
-        @media (min-width: 1024px) { /* lg */
+        @media (min-width: 1024px) { /* lg, PC 版本 */
             .ios-app-container {
                 max-width: 960px; 
                 border-radius: 28px; 
             }
-            .ios-list {
-                overflow-x: scroll; 
+            .ios-list { /* 表格容器的 PC 端特定樣式 */
+                overflow-x: scroll;   /* 水平捲動軸軌道常駐 */
+                overflow-y: auto;     /* 如果表格內容太高，則顯示垂直捲動軸 */
+                max-height: 65vh;     /* 設定表格容器本身的最大高度，例如視窗高度的65%。
+                                         這樣非常長的表格會在此容器內滾動，而不是無限撐開主內容區。
+                                         您可以根據需要調整此數值。 */
+                padding-bottom: 10px; /* 為可能的水平捲動軸留出一些空間，避免遮擋最後一行數據 */
             }
         }
         @media (min-width: 1280px) { /* xl */
@@ -67,6 +81,7 @@
                 max-width: 1140px; 
                 border-radius: 32px; 
             }
+            /* .ios-list 的樣式會從 lg 斷點繼承，如有需要可在此處覆寫 */
         }
 
         .page {
@@ -87,9 +102,9 @@
             flex-shrink: 0; 
         }
         .ios-header-title { font-size: 1.1rem; font-weight: 600; color: #000; }
-        .ios-content {
+        .ios-content { /* 主內容區域 */
             padding: 16px;
-            overflow-y: auto; 
+            overflow-y: auto; /* 如果整體內容 (包括按鈕、搜尋框、表格容器) 超出，則此處會垂直捲動 */
             flex-grow: 1;     
             background-color: #f9f9f9;
             -webkit-overflow-scrolling: touch; 
@@ -107,8 +122,39 @@
         }
         .ios-button:hover { background-color: #005bb5; }
         
-        .ios-list {
-            overflow-x: auto; 
+        /* 工作表按鈕樣式 */
+        .sheet-button {
+            background-color: #e5e5ea;
+            color: #007aff;
+            padding: 8px 12px;
+            border: 1px solid #d1d1d6;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: background-color 0.2s, color 0.2s, border-color 0.2s;
+            margin-right: 8px;
+            margin-bottom: 8px;
+        }
+        .sheet-button:hover {
+            background-color: #dcdce0;
+        }
+        .sheet-button.active { /* 目前選定的工作表按鈕樣式 */
+            background-color: #007aff;
+            color: white;
+            border-color: #007aff;
+            font-weight: 500;
+        }
+        #sheetButtonsContainer {
+            display: flex;
+            flex-wrap: wrap; 
+            margin-bottom: 16px;
+            padding-bottom: 8px; 
+            max-height: 100px; 
+            overflow-y: auto; 
+        }
+        
+        .ios-list { /* 表格容器的通用樣式 */
+            overflow-x: auto; /* 預設在小螢幕上，內容超出才顯示水平捲動軸 */
             -webkit-overflow-scrolling: touch; 
             border-radius: 8px; 
             background-color: #fff; 
@@ -121,7 +167,7 @@
         }
         .ios-list th {
             background-color: #f0f0f0; font-weight: 500; color: #555;
-            position: sticky; top: 0; z-index: 1; 
+            position: sticky; top: 0; z-index: 1; /* 表頭在垂直捲動時固定 (如果.ios-list本身滾動) */
         }
         .ios-list td { background-color: #fff; color: #333; }
         .ios-list tr:last-child td { border-bottom: none; }
@@ -153,6 +199,9 @@
                 <button id="logoutButton" class="text-sm text-red-500 hover:text-red-700 font-medium">登出</button>
             </header>
             <main class="ios-content">
+                <div id="sheetButtonsContainer" class="mb-4">
+                    <p id="sheetLoadingMessage" class="text-gray-500 text-sm">正在載入工作表清單...</p>
+                </div>
                 <div class="mb-4">
                     <input type="text" id="searchInput" placeholder="輸入關鍵字搜尋產品..." class="ios-input">
                 </div>
@@ -160,7 +209,8 @@
                     <div class="loader"></div>
                     <p class="text-center text-gray-600">正在載入資料...</p>
                 </div>
-                <div id="errorMessage" class="hidden p-4 text-center text-red-600 bg-red-100 rounded-lg"></div> <div id="resultsList" class="ios-list">
+                <div id="errorMessage" class="hidden p-4 text-center text-red-600 bg-red-100 rounded-lg"></div>
+                <div id="resultsList" class="ios-list">
                     </div>
             </main>
         </div>
@@ -172,37 +222,36 @@
         const mainPage = document.getElementById('mainPage');
         const auth0LoginButton = document.getElementById('auth0LoginButton');
         const logoutButton = document.getElementById('logoutButton');
+        const sheetButtonsContainer = document.getElementById('sheetButtonsContainer'); 
+        const sheetLoadingMessage = document.getElementById('sheetLoadingMessage'); 
         const searchInput = document.getElementById('searchInput');
         const resultsList = document.getElementById('resultsList');
         const loadingIndicator = document.getElementById('loadingIndicator');
         const generalErrorMessage = document.getElementById('errorMessage');
         const authErrorDisplay = document.getElementById('authError');
-        // const userProfileElement = document.getElementById('userProfile');
 
         // Google Sheet 設定
         const SHEET_ID = '1sxAYg3k2ZDV8zulv67U1O9TS5NF5cuMfuisHWz8FXkU';
-        const SHEET_NAME = '20250514';
-        const API_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(SHEET_NAME)}`;
+        // !!! 請務必替換成您自己的 Google Cloud API 金鑰 !!!
+        const GOOGLE_API_KEY = 'YOUR_GOOGLE_CLOUD_API_KEY'; // <--- 在此填入您的 API 金鑰
+        const DEFAULT_SHEET_NAME = '20250514'; 
+        let currentSheetName = DEFAULT_SHEET_NAME; 
         let sheetData = { headers: [], data: [] };
+        let allSheetNames = []; 
 
         // Auth0 設定 - !!! 請務必替換成您自己的 Auth0 Domain 和 Client ID !!!
-        const auth0Domain = 'dev-mcspzgwngm55kx82.us.auth0.com';        // 例如: 'your-tenant.auth0.com'
-        const auth0ClientId = 'cB8W5yIJAcqDSizDY3hvwd3J0ZrKPqRb'; // 從 Auth0 Application Settings 取得
-        const auth0RedirectUri = 'https://sheetseekerey.netlify.app/';
-
+        const auth0Domain = 'YOUR_AUTH0_DOMAIN';        
+        const auth0ClientId = 'YOUR_AUTH0_CLIENT_ID'; 
+        const auth0RedirectUri = window.location.origin;
         let auth0Client = null;
 
-        // --- Auth0 相關函數 ---
+        // --- Auth0 相關函數 (保持不變) ---
         async function configureClient() {
             try {
                 auth0Client = await auth0.createAuth0Client({
-                    domain: auth0Domain,
-                    clientId: auth0ClientId,
-                    authorizationParams: {
-                        redirect_uri: auth0RedirectUri,
-                        // scope: 'openid profile email' 
-                    },
-                    cacheLocation: 'localstorage' // 建議 SPA 使用 localstorage
+                    domain: auth0Domain, clientId: auth0ClientId,
+                    authorizationParams: { redirect_uri: auth0RedirectUri, },
+                    cacheLocation: 'localstorage'
                 });
                 console.log('Auth0 client configured successfully.');
                 return auth0Client;
@@ -215,97 +264,127 @@
                 return null;
             }
         }
-
         async function updateUI() {
-            if (!auth0Client) {
-                console.warn('Auth0 client not initialized yet for updateUI. Showing login page.');
-                showLoginPage();
-                return;
-            }
+            if (!auth0Client) { console.warn('Auth0 client not initialized. Showing login page.'); showLoginPage(); return; }
             try {
                 const isAuthenticated = await auth0Client.isAuthenticated();
                 console.log('Is Authenticated:', isAuthenticated);
-
                 if (isAuthenticated) {
                     const user = await auth0Client.getUser();
                     console.log('Authenticated User:', user);
                     showMainPage(user);
-                    // if (userProfileElement && user) {
-                    //     userProfileElement.textContent = `歡迎, ${user.name || user.email}!`;
-                    // }
                 } else {
                     console.log('User is not authenticated. Showing login page.');
                     showLoginPage();
                 }
-            } catch (e) {
-                console.error('Error updating UI based on auth state:', e);
-                showLoginPage(); // 出錯時退回登入頁
-            }
+            } catch (e) { console.error('Error updating UI:', e); showLoginPage(); }
         }
-
         async function login() {
             if (!auth0Client) {
                 console.error('Auth0 client not initialized for login');
-                if (authErrorDisplay) {
-                    authErrorDisplay.textContent = 'Auth0 服務尚未準備就緒，請稍後再試。';
-                    authErrorDisplay.classList.remove('hidden');
-                }
+                if (authErrorDisplay) { authErrorDisplay.textContent = 'Auth0 服務尚未準備就緒。'; authErrorDisplay.classList.remove('hidden'); }
                 return;
             }
-            try {
-                console.log('Attempting login with redirect...');
-                await auth0Client.loginWithRedirect();
-            } catch (e) {
-                console.error('Login failed:', e);
-                if (authErrorDisplay) {
-                    authErrorDisplay.textContent = '登入失敗: ' + e.message;
-                    authErrorDisplay.classList.remove('hidden');
-                }
-            }
+            try { await auth0Client.loginWithRedirect(); }
+            catch (e) { console.error('Login failed:', e); if (authErrorDisplay) { authErrorDisplay.textContent = '登入失敗: ' + e.message; authErrorDisplay.classList.remove('hidden'); } }
         }
-
         function doLogout() {
-            if (!auth0Client) {
-                console.error('Auth0 client not initialized for logout');
-                return;
-            }
-            try {
-                console.log('Logging out...');
-                auth0Client.logout({
-                    logoutParams: {
-                        returnTo: auth0RedirectUri
-                    }
-                });
-            } catch (e) {
-                console.error('Logout failed:', e);
-            }
+            if (!auth0Client) { console.error('Auth0 client not initialized for logout'); return; }
+            try { auth0Client.logout({ logoutParams: { returnTo: auth0RedirectUri } }); }
+            catch (e) { console.error('Logout failed:', e); }
         }
 
         // --- 頁面顯示邏輯 ---
         function showLoginPage() {
-            console.log("Showing Login Page"); // 增加日誌
-            if (loginPage && mainPage) {
-                loginPage.classList.remove('hidden');
-                mainPage.classList.add('hidden');
-            }
+            console.log("Showing Login Page");
+            if (loginPage && mainPage) { loginPage.classList.remove('hidden'); mainPage.classList.add('hidden'); }
             if (authErrorDisplay) authErrorDisplay.classList.add('hidden');
             if (generalErrorMessage) generalErrorMessage.classList.add('hidden');
             if (resultsList) resultsList.innerHTML = '';
             if (searchInput) searchInput.value = '';
+            if (sheetButtonsContainer) sheetButtonsContainer.innerHTML = `<p id="sheetLoadingMessage" class="text-gray-500 text-sm">正在載入工作表清單...</p>`; 
+            currentSheetName = DEFAULT_SHEET_NAME;
             sheetData = { headers: [], data: [] };
+            allSheetNames = [];
         }
 
         function showMainPage(user) {
-            console.log("Showing Main Page for user:", user ? (user.name || user.email) : "Unknown"); // 增加日誌
+            console.log("Showing Main Page for user:", user ? (user.name || user.email) : "Unknown");
             if (loginPage && mainPage) {
                 loginPage.classList.add('hidden');
                 mainPage.classList.remove('hidden');
-                fetchSheetData();
+                fetchAndDisplaySheetNames(); 
             }
         }
 
-        // --- Google Sheet 資料處理函數 (保持不變) ---
-        function parseCSVLine(line) {
+        // --- Google Sheet 資料處理函數 ---
+        async function fetchAndDisplaySheetNames() {
+            if (GOOGLE_API_KEY === 'YOUR_GOOGLE_CLOUD_API_KEY') {
+                console.error("Google API Key 尚未設定。請在 JavaScript 中填寫 GOOGLE_API_KEY。");
+                if(sheetLoadingMessage) sheetLoadingMessage.textContent = 'Google API Key 未設定，無法載入工作表清單。';
+                generalErrorMessage.textContent = 'Google API Key 未設定，無法載入工作表清單。';
+                generalErrorMessage.classList.remove('hidden');
+                return;
+            }
+            if(sheetLoadingMessage) sheetLoadingMessage.textContent = '正在載入工作表清單...';
+
+            const sheetsApiUrl = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}?key=${GOOGLE_API_KEY}&fields=sheets.properties.title`;
+            console.log(`Fetching sheet names from: ${sheetsApiUrl}`);
+
+            try {
+                const response = await fetch(sheetsApiUrl);
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({ message: response.statusText }));
+                    throw new Error(`無法獲取工作表清單: ${response.status} ${errorData.error?.message || errorData.message || response.statusText}`);
+                }
+                const data = await response.json();
+                allSheetNames = data.sheets.map(sheet => sheet.properties.title);
+                console.log('Available sheets:', allSheetNames);
+
+                sheetButtonsContainer.innerHTML = ''; 
+                if (allSheetNames.length === 0) {
+                    sheetButtonsContainer.innerHTML = '<p class="text-gray-500 text-sm">此試算表中沒有找到任何工作表。</p>';
+                    return;
+                }
+
+                allSheetNames.forEach(name => {
+                    const button = document.createElement('button');
+                    button.textContent = name;
+                    button.classList.add('sheet-button');
+                    button.addEventListener('click', () => {
+                        document.querySelectorAll('.sheet-button.active').forEach(activeBtn => {
+                            activeBtn.classList.remove('active');
+                        });
+                        button.classList.add('active');
+                        currentSheetName = name;
+                        console.log(`Sheet selected: ${currentSheetName}`);
+                        searchInput.value = ''; 
+                        resultsList.innerHTML = ''; 
+                        fetchSheetData(); 
+                    });
+                    sheetButtonsContainer.appendChild(button);
+                });
+
+                if (allSheetNames.includes(DEFAULT_SHEET_NAME)) {
+                    currentSheetName = DEFAULT_SHEET_NAME;
+                    const defaultSheetButton = Array.from(sheetButtonsContainer.querySelectorAll('.sheet-button')).find(btn => btn.textContent === DEFAULT_SHEET_NAME);
+                    if (defaultSheetButton) { defaultSheetButton.click(); } 
+                    else { fetchSheetData(); }
+                } else if (allSheetNames.length > 0) {
+                    console.log('預設工作表未找到，將載入第一個工作表。');
+                    const firstSheetButton = sheetButtonsContainer.querySelector('.sheet-button');
+                    if (firstSheetButton) { firstSheetButton.click(); }
+                }
+            } catch (error) {
+                console.error("獲取工作表名稱時發生錯誤:", error);
+                if(sheetLoadingMessage) sheetLoadingMessage.style.display = 'none'; 
+                generalErrorMessage.textContent = `獲取工作表清單失敗: ${error.message}`;
+                generalErrorMessage.classList.remove('hidden');
+                sheetButtonsContainer.innerHTML = '<p class="text-red-500 text-sm">無法載入工作表清單。</p>';
+            }
+        }
+
+        function parseCSVLine(line) { 
             const regex = /(?:\"([^\"]*(?:\"\"[^\"]*)*)\"|([^\",]+))/g;
             let values = []; let match;
             while (match = regex.exec(line)) {
@@ -313,8 +392,7 @@
             }
             return values;
         }
-
-        function parseCSV(csvText) {
+        function parseCSV(csvText) { 
             if (typeof csvText !== 'string') { console.error("parseCSV 接收到的不是字串:", csvText); return { headers: [], data: [] }; }
             const lines = csvText.trim().split('\n'); const data = []; let headers = [];
             if (lines.length > 0) {
@@ -332,35 +410,45 @@
             return { headers, data };
         }
 
-        async function fetchSheetData() {
+        async function fetchSheetData() { 
             if (!loadingIndicator || !generalErrorMessage || !resultsList) { console.error('fetchSheetData: UI 元素未找到!'); return; }
-            loadingIndicator.classList.remove('hidden'); generalErrorMessage.classList.add('hidden'); resultsList.innerHTML = '';
+            if (!currentSheetName) {
+                generalErrorMessage.textContent = '尚未選擇工作表。';
+                generalErrorMessage.classList.remove('hidden');
+                return;
+            }
+            const dynamicApiUrl = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(currentSheetName)}`;
+            console.log(`Fetching data for sheet "${currentSheetName}" from: ${dynamicApiUrl}`);
+            loadingIndicator.classList.remove('hidden');
+            generalErrorMessage.classList.add('hidden');
+            resultsList.innerHTML = ''; 
+            sheetData = { headers: [], data: [] }; 
             try {
-                const response = await fetch(API_URL);
+                const response = await fetch(dynamicApiUrl);
                 if (!response.ok) {
                     const errorText = await response.text();
-                    throw new Error(`無法載入資料: ${response.status} ${response.statusText}. Server: ${errorText.substring(0,100)}`);
+                    throw new Error(`無法載入資料 (${currentSheetName}): ${response.status} ${response.statusText}. Server: ${errorText.substring(0,100)}`);
                 }
                 const csvText = await response.text();
                 sheetData = parseCSV(csvText);
-                if (!sheetData.headers || sheetData.headers.length === 0) { throw new Error('無法解析表頭或工作表為空。'); }
-                if (sheetData.data.length === 0) { resultsList.innerHTML = '<div class="no-results">工作表中目前沒有資料。</div>'; }
+                if (!sheetData.headers || sheetData.headers.length === 0) { throw new Error(`無法解析工作表 "${currentSheetName}" 的表頭或工作表為空。`); }
+                if (sheetData.data.length === 0) { resultsList.innerHTML = `<div class="no-results">工作表 "${currentSheetName}" 中目前沒有資料。</div>`; }
                 else { displayResults(sheetData.data); }
             } catch (error) {
                 console.error("fetchSheetData 錯誤:", error);
                 generalErrorMessage.textContent = `讀取產品資料錯誤: ${error.message}`;
                 generalErrorMessage.classList.remove('hidden');
-                resultsList.innerHTML = '<div class="no-results">無法載入產品資料。</div>';
+                resultsList.innerHTML = `<div class="no-results">無法載入工作表 "${currentSheetName}" 的資料。</div>`;
             } finally {
                 loadingIndicator.classList.add('hidden');
             }
         }
 
-        function filterAndDisplayData() {
+        function filterAndDisplayData() { 
             const searchTerm = searchInput.value.toLowerCase().trim();
             if (!sheetData.data || sheetData.data.length === 0) {
                 if (loadingIndicator && !loadingIndicator.classList.contains('hidden')) return;
-                resultsList.innerHTML = '<div class="no-results">沒有可供搜尋的資料。</div>'; return;
+                resultsList.innerHTML = `<div class="no-results">工作表 "${currentSheetName}" 中沒有可供搜尋的資料。</div>`; return;
             }
             const filteredData = sheetData.data.filter(row => 
                 !searchTerm || Object.values(row).some(value => String(value).toLowerCase().includes(searchTerm))
@@ -368,15 +456,15 @@
             displayResults(filteredData);
         }
         
-        function escapeHTML(str) {
+        function escapeHTML(str) { 
             if (str === null || str === undefined) return '';
             return String(str).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
         }
 
-        function displayResults(dataToDisplay) {
+        function displayResults(dataToDisplay) { 
             resultsList.innerHTML = ''; 
             if (generalErrorMessage) generalErrorMessage.classList.add('hidden');
-            if (dataToDisplay.length === 0) { resultsList.innerHTML = '<div class="no-results">未找到符合條件的產品。</div>'; return; }
+            if (dataToDisplay.length === 0) { resultsList.innerHTML = `<div class="no-results">在工作表 "${currentSheetName}" 中未找到符合條件的產品。</div>`; return; }
             const table = document.createElement('table'); const thead = document.createElement('thead');
             let headerRowHtml = '<tr>'; sheetData.headers.forEach(header => { headerRowHtml += `<th>${escapeHTML(header)}</th>`; });
             headerRowHtml += '</tr>'; thead.innerHTML = headerRowHtml; table.appendChild(thead);
@@ -389,14 +477,10 @@
         }
 
         // --- 事件監聽 ---
-        if (auth0LoginButton) {
-            auth0LoginButton.addEventListener('click', login);
-        } else { console.error("'auth0LoginButton' not found."); }
-
-        if (logoutButton) {
-            logoutButton.addEventListener('click', doLogout);
-        } else { console.error("'logoutButton' not found."); }
-        
+        if (auth0LoginButton) { auth0LoginButton.addEventListener('click', login); } 
+        else { console.error("'auth0LoginButton' not found."); }
+        if (logoutButton) { logoutButton.addEventListener('click', doLogout); } 
+        else { console.error("'logoutButton' not found."); }
         if (searchInput) {
             let searchTimeout;
             searchInput.addEventListener('input', () => {
@@ -409,17 +493,14 @@
         window.addEventListener('load', async () => {
             console.log('Window loaded. Configuring Auth0 client...');
             if (auth0Domain === 'YOUR_AUTH0_DOMAIN' || auth0ClientId === 'YOUR_AUTH0_CLIENT_ID') {
-                console.error("Auth0 Domain 或 Client ID 尚未設定。請在 JavaScript 中填寫這些值。");
-                if (authErrorDisplay) {
-                    authErrorDisplay.textContent = "Auth0 設定不完整，請聯繫管理員。";
-                    authErrorDisplay.classList.remove('hidden');
-                }
-                showLoginPage(); 
-                return; 
+                console.error("Auth0 Domain 或 Client ID 尚未設定。");
+                if (authErrorDisplay) { authErrorDisplay.textContent = "Auth0 設定不完整。"; authErrorDisplay.classList.remove('hidden');}
+                showLoginPage(); return; 
             }
-
+            if (GOOGLE_API_KEY === 'YOUR_GOOGLE_CLOUD_API_KEY') {
+                 console.warn("Google API Key 尚未設定。工作表清單功能將無法使用。");
+            }
             auth0Client = await configureClient();
-
             if (auth0Client) {
                 const query = window.location.search;
                 if (query.includes("code=") && query.includes("state=")) {
@@ -430,13 +511,10 @@
                         window.history.replaceState({}, document.title, window.location.pathname);
                     } catch (e) {
                         console.error('Error handling redirect callback:', e);
-                        if (authErrorDisplay) {
-                            authErrorDisplay.textContent = '處理登入回呼時發生錯誤: ' + e.message;
-                            authErrorDisplay.classList.remove('hidden');
-                        }
+                        if (authErrorDisplay) { authErrorDisplay.textContent = '處理登入回呼時發生錯誤: ' + e.message; authErrorDisplay.classList.remove('hidden');}
                     }
                 }
-                await updateUI();
+                await updateUI(); 
             } else {
                 showLoginPage(); 
             }
