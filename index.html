@@ -7,7 +7,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.auth0.com/js/auth0-spa-js/2.1/auth0-spa-js.production.js"></script>
     <style>
-        /* 自訂 iOS 風格樣式 (與先前相同) */
+        /* CSS 樣式 (與先前相同) */
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
             margin: 0;
@@ -173,9 +173,10 @@
     </div>
 
     <script>
-        // DOM 元素 (與先前相同)
+        // DOM 元素
         const loginPage = document.getElementById('loginPage');
         const mainPage = document.getElementById('mainPage');
+        // ... (其他 DOM 元素與先前相同)
         const auth0LoginButton = document.getElementById('auth0LoginButton');
         const logoutButton = document.getElementById('logoutButton');
         const searchInput = document.getElementById('searchInput');
@@ -184,7 +185,8 @@
         const generalErrorMessage = document.getElementById('errorMessage');
         const authErrorDisplay = document.getElementById('authError');
 
-        // Google Sheet 設定 (與先前相同)
+
+        // Google Sheet 設定
         const SHEET_ID = '1sxAYg3k2ZDV8zulv67U1O9TS5NF5cuMfuisHWz8FXkU';
         const SHEET_NAME = '20250514';
         const API_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(SHEET_NAME)}`;
@@ -192,77 +194,48 @@
         let sheetData = { headers: [], data: [] };
         let moreDataHintElement = null; 
 
-        // Auth0 設定 (與先前相同)
+        // Auth0 設定
         const auth0Domain = 'dev-mcspzgwngm55kx82.us.auth0.com'; 
         const auth0ClientId = 'cB8W5yIJAcqDSizDY3hvwd3J0ZrKPqRb'; 
         const auth0RedirectUri = window.location.origin; 
         let auth0Client = null;
 
         // --- 自動登出相關設定 ---
-        let inactivityTimer; // 用於存放 setTimeout 的 ID
-        const INACTIVITY_TIMEOUT_MS = 3 * 60 * 1000; // 3 分鐘 (以毫秒為單位)
-        let isUserLoggedIn = false; // 追蹤使用者登入狀態
-        const activityEvents = ['mousemove', 'mousedown', 'keypress', 'touchstart', 'scroll', 'click']; // 要監聽的活動事件
+        let inactivityTimer;
+        const INACTIVITY_TIMEOUT_MS = 3 * 60 * 1000; 
+        let isUserLoggedIn = false; 
+        const activityEvents = ['mousemove', 'mousedown', 'keypress', 'touchstart', 'scroll', 'click'];
 
-        // --- 自動登出相關函數 ---
+        // --- 自動登出相關函數 (與先前相同) ---
         function resetInactivityTimer() {
-            if (!isUserLoggedIn || document.hidden) { // 如果未登入或頁面非活動狀態，則不重設計時器
-                // console.log("計時器未重設：使用者未登入或頁面非活動。");
-                return;
-            }
+            if (!isUserLoggedIn || document.hidden) { return; }
             clearTimeout(inactivityTimer);
-            // console.log("閒置計時器已清除。");
             inactivityTimer = setTimeout(() => {
-                if (!isUserLoggedIn || document.hidden) { // 再次檢查，避免在不應登出的情況下登出
-                    // console.log("自動登出條件符合，但使用者已非登入狀態或頁面非活動。取消登出。");
-                    return;
-                }
+                if (!isUserLoggedIn || document.hidden) { return; }
                 console.log("使用者閒置已達3分鐘，將自動登出。");
                 alert("由於您已閒置超過3分鐘，系統將自動登出。");
                 doLogout();
             }, INACTIVITY_TIMEOUT_MS);
-            // console.log(`閒置計時器已重設，${INACTIVITY_TIMEOUT_MS / 1000} 秒後觸發。`);
         }
-
-        function userActivityDetected() {
-            // console.log("偵測到使用者活動，重設閒置計時器。");
-            resetInactivityTimer();
-        }
-
-        function addActivityListeners() {
-            activityEvents.forEach(event => {
-                window.addEventListener(event, userActivityDetected, true);
-            });
-            // console.log("活動監聽器已加入。");
-        }
-
-        function removeActivityListeners() {
-            activityEvents.forEach(event => {
-                window.removeEventListener(event, userActivityDetected, true);
-            });
-            // console.log("活動監聽器已移除。");
-        }
-
+        function userActivityDetected() { resetInactivityTimer(); }
+        function addActivityListeners() { activityEvents.forEach(event => window.addEventListener(event, userActivityDetected, true)); }
+        function removeActivityListeners() { activityEvents.forEach(event => window.removeEventListener(event, userActivityDetected, true)); }
         function handleVisibilityChange() {
-            if (!isUserLoggedIn) return; // 若未登入則不處理
-
-            if (document.hidden) { // 頁面切換到背景
-                // console.log("頁面切換到背景，清除閒置計時器。");
-                clearTimeout(inactivityTimer);
-            } else { // 頁面切換回前景
-                // console.log("頁面切換回前景，重設閒置計時器。");
-                resetInactivityTimer();
-            }
+            if (!isUserLoggedIn) return;
+            if (document.hidden) { clearTimeout(inactivityTimer); } 
+            else { resetInactivityTimer(); }
         }
 
-
-        // --- Auth0 相關函數 (與先前相同) ---
+        // --- Auth0 相關函數 ---
         async function configureClient() {
             try {
                 auth0Client = await auth0.createAuth0Client({
                     domain: auth0Domain,
                     clientId: auth0ClientId,
-                    authorizationParams: { redirect_uri: auth0RedirectUri, },
+                    authorizationParams: {
+                        redirect_uri: auth0RedirectUri,
+                        // prompt: 'login' // 【注意】若在此處加入 prompt: 'login', 可能會影響 handleRedirectCallback
+                    },
                     cacheLocation: 'localstorage'
                 });
                 console.log('Auth0 client configured successfully.');
@@ -277,32 +250,38 @@
             }
         }
 
-        async function updateUI() {
+        async function updateUI(isAfterLoginRedirect = false) { // 【修改】增加參數
             if (!auth0Client) {
-                isUserLoggedIn = false; // 確保狀態正確
+                isUserLoggedIn = false; 
                 showLoginPage();
                 return;
             }
             try {
                 const isAuthenticated = await auth0Client.isAuthenticated();
                 if (isAuthenticated) {
-                    const user = await auth0Client.getUser();
-                    isUserLoggedIn = true; // 【修改】設定登入狀態
-                    showMainPage(user);
+                    if (isAfterLoginRedirect) {
+                        // 剛透過重新導向登入成功，正常顯示主頁面
+                        isUserLoggedIn = true;
+                        showMainPage(await auth0Client.getUser());
+                    } else {
+                        // 偵測到現有會話 (非剛登入)，且要求每次重新登入，因此執行登出
+                        console.log("偵測到現有 Auth0 會話，為確保重新登入，將執行登出。");
+                        doLogout(); // 這會重新導向到登出，然後回到登入頁
+                    }
                 } else {
-                    isUserLoggedIn = false; // 【修改】設定登入狀態
+                    isUserLoggedIn = false; 
                     showLoginPage();
                 }
             } catch (e) {
                 console.error('Error updating UI based on auth state:', e);
-                isUserLoggedIn = false; // 【修改】設定登入狀態
+                isUserLoggedIn = false; 
                 showLoginPage();
             }
         }
 
         async function login() {
-            // ... (與先前相同)
             if (!auth0Client) {
+                // ... (錯誤處理與先前相同)
                 console.error('Auth0 client not initialized for login');
                 if (authErrorDisplay) {
                     authErrorDisplay.textContent = 'Auth0 服務尚未準備就緒，請稍後再試。';
@@ -311,8 +290,12 @@
                 return;
             }
             try {
-                console.log('Attempting login with redirect...');
-                await auth0Client.loginWithRedirect();
+                console.log('Attempting login with redirect (forcing re-authentication)...');
+                await auth0Client.loginWithRedirect({
+                    authorizationParams: {
+                        prompt: 'login' // 【修改】強制要求使用者重新認證
+                    }
+                });
             } catch (e) {
                 console.error('Login failed:', e);
                 if (authErrorDisplay) {
@@ -323,13 +306,11 @@
         }
 
         function doLogout() {
-            // 【修改】自動登出相關清理
             isUserLoggedIn = false;
             clearTimeout(inactivityTimer);
             removeActivityListeners();
             document.removeEventListener('visibilitychange', handleVisibilityChange, false);
             console.log("閒置計時器與監聽器已於登出時清除。");
-            // ---
 
             if (!auth0Client) {
                 console.error('Auth0 client not initialized for logout');
@@ -342,24 +323,23 @@
                 });
             } catch (e) {
                 console.error('Logout failed:', e);
+                // 即使 Auth0 JS SDK 的 logout 方法出錯，本地狀態也應清理
+                showLoginPage(); // 作為備援，確保回到登入頁
             }
         }
 
         // --- 頁面顯示邏輯 ---
         function showLoginPage() {
-            // 【修改】自動登出相關清理
-            isUserLoggedIn = false; // 確保狀態是未登入
+            isUserLoggedIn = false; 
             clearTimeout(inactivityTimer);
             removeActivityListeners();
             document.removeEventListener('visibilitychange', handleVisibilityChange, false);
-            // ---
-
+            
             console.log("Showing Login Page");
             if (loginPage && mainPage) {
                 loginPage.classList.remove('hidden');
                 mainPage.classList.add('hidden');
             }
-            // ... (其餘與先前相同)
             if (authErrorDisplay) authErrorDisplay.classList.add('hidden');
             if (generalErrorMessage) generalErrorMessage.classList.add('hidden');
             if (resultsList) resultsList.innerHTML = '';
@@ -375,18 +355,24 @@
                 mainPage.classList.remove('hidden');
                 fetchSheetData(); 
                 
-                // 【修改】啟動自動登出機制
-                isUserLoggedIn = true; // 再次確認登入狀態
+                isUserLoggedIn = true; 
                 addActivityListeners();
-                resetInactivityTimer(); // 首次進入主頁面時啟動計時器
+                resetInactivityTimer(); 
                 document.addEventListener('visibilitychange', handleVisibilityChange, false);
-                // ---
             }
         }
 
         // --- Google Sheet 資料處理函數 (與先前相同) ---
-        // parseCSVLine, parseCSV, fetchSheetData, updateMoreDataHint, filterAndDisplayData, escapeHTML, displayResults
+        function parseCSVLine(line) { /* ... */ }
+        function parseCSV(csvText) { /* ... */ }
+        async function fetchSheetData() { /* ... */ }
+        function updateMoreDataHint(showHint, totalRows = 0, displayedRows = 0) { /* ... */ }
+        function filterAndDisplayData() { /* ... */ }
+        function escapeHTML(str) { /* ... */ }
+        function displayResults(dataToDisplay) { /* ... */ }
 
+        // (為了簡潔，此處省略了這些函數的完整代碼，它們與您上一版相同)
+        // --- Google Sheet 資料處理函數 (複製貼上上一版本即可) ---
         function parseCSVLine(line) {
             const regex = /(?:\"([^\"]*(?:\"\"[^\"]*)*)\"|([^\",]+))/g;
             let values = []; let match;
@@ -539,12 +525,7 @@
             resultsList.appendChild(table);
         }
 
-
         // --- 事件監聽 (與先前相同) ---
-        if (auth0LoginButton) { /* ... */ }
-        if (logoutButton) { /* ... */ }
-        if (searchInput) { /* ... */ }
-        
         if (auth0LoginButton) {
             auth0LoginButton.addEventListener('click', login);
         } else { console.error("'auth0LoginButton' not found."); }
@@ -557,13 +538,13 @@
             let searchTimeout;
             searchInput.addEventListener('input', () => {
                 clearTimeout(searchTimeout);
-                userActivityDetected(); // 搜尋輸入也算是活動
+                userActivityDetected(); 
                 searchTimeout = setTimeout(filterAndDisplayData, 300);
             });
         } else { console.error("'searchInput' not found."); }
 
 
-        // --- 應用程式初始化 (與先前相同，除了移除特定範例檢查) ---
+        // --- 應用程式初始化 ---
         window.addEventListener('load', async () => {
             console.log('Window loaded. Configuring Auth0 client...');
             
@@ -573,7 +554,7 @@
                     authErrorDisplay.textContent = "Auth0 設定不完整，請聯繫管理員。";
                     authErrorDisplay.classList.remove('hidden');
                 }
-                isUserLoggedIn = false; // 確保狀態
+                isUserLoggedIn = false; 
                 showLoginPage();
                 return; 
             }
@@ -582,21 +563,26 @@
 
             if (auth0Client) {
                 const query = window.location.search;
-                if (query.includes("code=") && query.includes("state=")) {
+                const isRedirectCallback = query.includes("code=") && query.includes("state="); // 【修改】判斷是否為登入重新導向
+
+                if (isRedirectCallback) { // 如果是從 Auth0 登入後重新導向回來
                     try {
                         await auth0Client.handleRedirectCallback();
-                        window.history.replaceState({}, document.title, window.location.pathname);
+                        console.log('Redirect callback handled.');
+                        window.history.replaceState({}, document.title, window.location.pathname); // 清理 URL
+                        // 此時 updateUI 將會被調用，且 isRedirectCallback 為 true
                     } catch (e) {
                         console.error('Error handling redirect callback:', e);
                         if (authErrorDisplay) {
                             authErrorDisplay.textContent = '處理登入回呼時發生錯誤: ' + e.message;
                             authErrorDisplay.classList.remove('hidden');
                         }
+                        // 即使回呼出錯，也嘗試更新UI（可能會顯示登入頁）
                     }
                 }
-                await updateUI(); // updateUI 會根據認證狀態設定 isUserLoggedIn 並呼叫 showMainPage/showLoginPage
+                await updateUI(isRedirectCallback); // 【修改】將 isRedirectCallback 狀態傳入 updateUI
             } else {
-                isUserLoggedIn = false; // 確保狀態
+                isUserLoggedIn = false; 
                 showLoginPage();
             }
         });
