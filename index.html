@@ -33,7 +33,6 @@
             max-width: 480px; /* 手機上的最大寬度 */
             height: 100vh;    /* 在小螢幕上，讓容器盡可能佔滿視窗高度，但受限於 max-height */
             max-height: 850px;
-            /* overflow: hidden; /* 移除或註解此行以避免影響可能的外部捲動，但我們主要處理內部捲動 */
         }
 
         /* 不同螢幕尺寸下的 .ios-app-container 樣式 */
@@ -192,12 +191,12 @@
         const API_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(SHEET_NAME)}`;
         
         let sheetData = { headers: [], data: [] };
-        let moreDataHintElement = null; // 用於追蹤 "更多資料" 提示的 DOM 元素
+        let moreDataHintElement = null; 
 
         // Auth0 設定 - !!! 請務必替換成您自己的 Auth0 Domain 和 Client ID !!!
-        const auth0Domain = 'dev-mcspzgwngm55kx82.us.auth0.com'; // 例如: 'your-tenant.auth0.com'
-        const auth0ClientId = 'cB8W5yIJAcqDSizDY3hvwd3J0ZrKPqRb'; // 從 Auth0 Application Settings 取得
-        const auth0RedirectUri = window.location.origin; // 使用目前網頁的 origin 作為重導向 URI
+        const auth0Domain = 'dev-mcspzgwngm55kx82.us.auth0.com'; 
+        const auth0ClientId = 'cB8W5yIJAcqDSizDY3hvwd3J0ZrKPqRb'; 
+        const auth0RedirectUri = window.location.origin; 
 
         let auth0Client = null;
 
@@ -297,8 +296,8 @@
             if (generalErrorMessage) generalErrorMessage.classList.add('hidden');
             if (resultsList) resultsList.innerHTML = '';
             if (searchInput) searchInput.value = '';
-            sheetData = { headers: [], data: [] }; // 重設資料
-            updateMoreDataHint(false); // 確保登出或回到登入頁時清除提示
+            sheetData = { headers: [], data: [] }; 
+            updateMoreDataHint(false); 
         }
 
         function showMainPage(user) {
@@ -306,7 +305,7 @@
             if (loginPage && mainPage) {
                 loginPage.classList.add('hidden');
                 mainPage.classList.remove('hidden');
-                fetchSheetData(); // 登入後獲取資料
+                fetchSheetData(); 
             }
         }
 
@@ -342,8 +341,8 @@
             if (!loadingIndicator || !generalErrorMessage || !resultsList) { console.error('fetchSheetData: UI 元素未找到!'); return; }
             loadingIndicator.classList.remove('hidden');
             generalErrorMessage.classList.add('hidden');
-            resultsList.innerHTML = ''; // 先清空，避免舊內容殘留
-            updateMoreDataHint(false); // 清除可能存在的舊提示
+            resultsList.innerHTML = ''; 
+            updateMoreDataHint(false); 
 
             try {
                 const response = await fetch(API_URL);
@@ -375,12 +374,6 @@
             }
         }
 
-        /**
-         * 更新或移除 "更多資料" 的提示訊息
-         * @param {boolean} showHint 是否嘗試顯示提示
-         * @param {number} totalRows 資料總行數 (僅在 showHint 為 true 時使用)
-         * @param {number} displayedRows 當前顯示的行數 (僅在 showHint 為 true 時使用)
-         */
         function updateMoreDataHint(showHint, totalRows = 0, displayedRows = 0) {
             if (moreDataHintElement) {
                 moreDataHintElement.remove();
@@ -489,21 +482,18 @@
         // --- 應用程式初始化 ---
         window.addEventListener('load', async () => {
             console.log('Window loaded. Configuring Auth0 client...');
-             // 檢查 Auth0 配置是否為預留位置
-            if (auth0Domain === 'YOUR_AUTH0_DOMAIN' || auth0ClientId === 'YOUR_AUTH0_CLIENT_ID' || 
-                auth0Domain.includes('dev-mcspzgwngm55kx82.us.auth0.com') && auth0ClientId.includes('cB8W5yIJAcqDSizDY3hvwd3J0ZrKPqRb') && auth0RedirectUri.includes('sheetseekerey.netlify.app') && (auth0Domain === 'dev-mcspzgwngm55kx82.us.auth0.com' && auth0ClientId === 'cB8W5yIJAcqDSizDY3hvwd3J0ZrKPqRb' && auth0RedirectUri === 'https://sheetseekerey.netlify.app' && !confirm("偵測到範例 Auth0 設定，這可能僅供測試。確定要繼續嗎？若這是您的正式設定請忽略此訊息。"))) {
-                // 如果是範例值且使用者取消，則提示設定
-                if (auth0Domain.includes('YOUR_AUTH0_DOMAIN') || auth0ClientId.includes('YOUR_AUTH0_CLIENT_ID')) {
-                     console.error("Auth0 Domain 或 Client ID 尚未設定。請在 JavaScript 中填寫這些值。");
-                    if (authErrorDisplay) {
-                        authErrorDisplay.textContent = "Auth0 設定不完整，請聯繫管理員。";
-                        authErrorDisplay.classList.remove('hidden');
-                    }
-                    showLoginPage();
-                    return;
+            
+            // 【修改部分】只檢查 Auth0 配置是否為預留位置字串
+            if (auth0Domain === 'YOUR_AUTH0_DOMAIN' || auth0ClientId === 'YOUR_AUTH0_CLIENT_ID') {
+                console.error("Auth0 Domain 或 Client ID 尚未設定。請在 JavaScript 中填寫這些值。");
+                if (authErrorDisplay) {
+                    authErrorDisplay.textContent = "Auth0 設定不完整，請聯繫管理員。";
+                    authErrorDisplay.classList.remove('hidden');
                 }
+                showLoginPage();
+                return; // 設定不完整，不繼續執行
             }
-
+            // 【修改部分結束】移除了針對特定範例值的 confirm 對話框檢查
 
             auth0Client = await configureClient();
 
@@ -525,6 +515,7 @@
                 }
                 await updateUI();
             } else {
+                // configureClient 內部出錯或返回 null 時
                 showLoginPage();
             }
         });
