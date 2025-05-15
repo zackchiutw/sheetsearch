@@ -7,7 +7,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.auth0.com/js/auth0-spa-js/2.1/auth0-spa-js.production.js"></script>
     <style>
-        /* 自訂 iOS 風格樣式 */
+        /* CSS 樣式 (與先前相同，移除了 user-select 相關的修改) */
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
             margin: 0;
@@ -111,7 +111,6 @@
             border-radius: 8px;
             background-color: #fff;
             box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-            /* 【移除】移除了 user-select: none; 相關屬性 */
         }
         .ios-list table {
             width: 100%;
@@ -134,7 +133,6 @@
             padding: 20px; text-align: center; color: #888;
             background-color: #fff;
             white-space: normal;
-            /* 【移除】移除了 user-select: text; 相關屬性 */
         }
         .hidden { display: none !important; }
         .loader {
@@ -181,7 +179,7 @@
         const auth0LoginButton = document.getElementById('auth0LoginButton');
         const logoutButton = document.getElementById('logoutButton');
         const searchInput = document.getElementById('searchInput');
-        const resultsList = document.getElementById('resultsList'); // 表格容器
+        const resultsList = document.getElementById('resultsList');
         const loadingIndicator = document.getElementById('loadingIndicator');
         const generalErrorMessage = document.getElementById('errorMessage');
         const authErrorDisplay = document.getElementById('authError');
@@ -490,114 +488,4 @@
             const thead = document.createElement('thead');
             let headerRowHtml = '<tr>';
             if (sheetData.headers && sheetData.headers.length > 0) {
-                sheetData.headers.forEach(header => { headerRowHtml += `<th>${escapeHTML(header)}</th>`; });
-            }
-            headerRowHtml += '</tr>';
-            thead.innerHTML = headerRowHtml;
-            table.appendChild(thead);
-            const tbody = document.createElement('tbody');
-            dataToDisplay.forEach(rowObject => {
-                let rowHtml = '<tr>';
-                if (sheetData.headers && sheetData.headers.length > 0) {
-                    sheetData.headers.forEach(header => { rowHtml += `<td>${escapeHTML(rowObject[header])}</td>`; });
-                }
-                rowHtml += '</tr>';
-                tbody.innerHTML += rowHtml;
-            });
-            table.appendChild(tbody);
-            resultsList.appendChild(table);
-        }
-
-
-        // --- 事件監聽 ---
-        // 【修改】只保留阻止鍵盤快捷鍵複製的程式碼
-        if (resultsList) { // 確保 resultsList 元素已定義
-            document.addEventListener('keydown', function(event) {
-                let targetElement = event.target;
-                let isInResultsList = false;
-                // 檢查事件是否發生在 resultsList 內部
-                while (targetElement != null) {
-                    if (targetElement === resultsList) {
-                        isInResultsList = true;
-                        break;
-                    }
-                    targetElement = targetElement.parentElement;
-                }
-
-                if (isInResultsList) {
-                    // 防止複製 Ctrl+C / Cmd+C (keyCode 67 for 'C')
-                    if ((event.ctrlKey || event.metaKey) && (event.key === 'c' || event.key === 'C' || event.keyCode === 67)) {
-                        event.preventDefault();
-                        console.log("Copy (Ctrl/Cmd+C) prevented on table content.");
-                    }
-                    // 防止全選 Ctrl+A / Cmd+A (keyCode 65 for 'A')
-                    if ((event.ctrlKey || event.metaKey) && (event.key === 'a' || event.key === 'A' || event.keyCode === 65)) {
-                        event.preventDefault();
-                        console.log("Select All (Ctrl/Cmd+A) prevented on table content.");
-                    }
-                }
-            }, true); // 使用捕獲階段，以便更早攔截事件
-        }
-        // 【移除】移除了 resultsList.addEventListener('contextmenu', ...) 的程式碼
-
-        if (auth0LoginButton) {
-            auth0LoginButton.addEventListener('click', login);
-        } else { console.error("'auth0LoginButton' not found."); }
-
-        if (logoutButton) {
-            logoutButton.addEventListener('click', doLogout);
-        } else { console.error("'logoutButton' not found."); }
-
-        if (searchInput) {
-            let searchTimeout;
-            searchInput.addEventListener('input', () => {
-                clearTimeout(searchTimeout);
-                userActivityDetected(); 
-                searchTimeout = setTimeout(filterAndDisplayData, 300);
-            });
-        } else { console.error("'searchInput' not found."); }
-
-
-        // --- 應用程式初始化 (與先前相同) ---
-        window.addEventListener('load', async () => {
-            console.log('Window loaded. Configuring Auth0 client...');
-            
-            if (auth0Domain === 'YOUR_AUTH0_DOMAIN' || auth0ClientId === 'YOUR_AUTH0_CLIENT_ID') {
-                console.error("Auth0 Domain 或 Client ID 尚未設定。請在 JavaScript 中填寫這些值。");
-                if (authErrorDisplay) {
-                    authErrorDisplay.textContent = "Auth0 設定不完整，請聯繫管理員。";
-                    authErrorDisplay.classList.remove('hidden');
-                }
-                isUserLoggedIn = false; 
-                showLoginPage();
-                return; 
-            }
-
-            auth0Client = await configureClient();
-
-            if (auth0Client) {
-                const query = window.location.search;
-                const isRedirectCallback = query.includes("code=") && query.includes("state="); 
-
-                if (isRedirectCallback) { 
-                    try {
-                        await auth0Client.handleRedirectCallback();
-                        console.log('Redirect callback handled.');
-                        window.history.replaceState({}, document.title, window.location.pathname); 
-                    } catch (e) {
-                        console.error('Error handling redirect callback:', e);
-                        if (authErrorDisplay) {
-                            authErrorDisplay.textContent = '處理登入回呼時發生錯誤: ' + e.message;
-                            authErrorDisplay.classList.remove('hidden');
-                        }
-                    }
-                }
-                await updateUI(isRedirectCallback); 
-            } else {
-                isUserLoggedIn = false; 
-                showLoginPage();
-            }
-        });
-    </script>
-</body>
-</html>
+                sheetData.headers.forEach(header =>
