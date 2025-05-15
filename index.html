@@ -7,7 +7,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.auth0.com/js/auth0-spa-js/2.1/auth0-spa-js.production.js"></script>
     <style>
-        /* CSS 樣式 (與先前相同) */
+        /* 自訂 iOS 風格樣式 */
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
             margin: 0;
@@ -111,6 +111,7 @@
             border-radius: 8px;
             background-color: #fff;
             box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            /* 【移除】移除了 user-select: none; 相關屬性 */
         }
         .ios-list table {
             width: 100%;
@@ -133,6 +134,7 @@
             padding: 20px; text-align: center; color: #888;
             background-color: #fff;
             white-space: normal;
+            /* 【移除】移除了 user-select: text; 相關屬性 */
         }
         .hidden { display: none !important; }
         .loader {
@@ -176,17 +178,15 @@
         // DOM 元素
         const loginPage = document.getElementById('loginPage');
         const mainPage = document.getElementById('mainPage');
-        // ... (其他 DOM 元素與先前相同)
         const auth0LoginButton = document.getElementById('auth0LoginButton');
         const logoutButton = document.getElementById('logoutButton');
         const searchInput = document.getElementById('searchInput');
-        const resultsList = document.getElementById('resultsList');
+        const resultsList = document.getElementById('resultsList'); // 表格容器
         const loadingIndicator = document.getElementById('loadingIndicator');
         const generalErrorMessage = document.getElementById('errorMessage');
         const authErrorDisplay = document.getElementById('authError');
 
-
-        // Google Sheet 設定
+        // Google Sheet 設定 (與先前相同)
         const SHEET_ID = '1sxAYg3k2ZDV8zulv67U1O9TS5NF5cuMfuisHWz8FXkU';
         const SHEET_NAME = '20250514';
         const API_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(SHEET_NAME)}`;
@@ -194,19 +194,25 @@
         let sheetData = { headers: [], data: [] };
         let moreDataHintElement = null; 
 
-        // Auth0 設定
+        // Auth0 設定 (與先前相同)
         const auth0Domain = 'dev-mcspzgwngm55kx82.us.auth0.com'; 
         const auth0ClientId = 'cB8W5yIJAcqDSizDY3hvwd3J0ZrKPqRb'; 
         const auth0RedirectUri = window.location.origin; 
         let auth0Client = null;
 
-        // --- 自動登出相關設定 ---
+        // 自動登出相關設定 (與先前相同)
         let inactivityTimer;
         const INACTIVITY_TIMEOUT_MS = 3 * 60 * 1000; 
         let isUserLoggedIn = false; 
         const activityEvents = ['mousemove', 'mousedown', 'keypress', 'touchstart', 'scroll', 'click'];
 
-        // --- 自動登出相關函數 (與先前相同) ---
+        // 自動登出相關函數 (與先前相同, 為了簡潔此處省略，實際使用時請保留)
+        function resetInactivityTimer() { /* ... */ }
+        function userActivityDetected() { /* ... */ }
+        function addActivityListeners() { /* ... */ }
+        function removeActivityListeners() { /* ... */ }
+        function handleVisibilityChange() { /* ... */ }
+        // --- (複製貼上上一版本的自動登出函數) ---
         function resetInactivityTimer() {
             if (!isUserLoggedIn || document.hidden) { return; }
             clearTimeout(inactivityTimer);
@@ -226,16 +232,18 @@
             else { resetInactivityTimer(); }
         }
 
-        // --- Auth0 相關函數 ---
+        // Auth0 相關函數 (與先前相同)
+        async function configureClient() { /* ... */ }
+        async function updateUI(isAfterLoginRedirect = false) { /* ... */ }
+        async function login() { /* ... */ }
+        function doLogout() { /* ... */ }
+        // --- (複製貼上上一版本的 Auth0 函數) ---
         async function configureClient() {
             try {
                 auth0Client = await auth0.createAuth0Client({
                     domain: auth0Domain,
                     clientId: auth0ClientId,
-                    authorizationParams: {
-                        redirect_uri: auth0RedirectUri,
-                        // prompt: 'login' // 【注意】若在此處加入 prompt: 'login', 可能會影響 handleRedirectCallback
-                    },
+                    authorizationParams: { redirect_uri: auth0RedirectUri, },
                     cacheLocation: 'localstorage'
                 });
                 console.log('Auth0 client configured successfully.');
@@ -249,8 +257,7 @@
                 return null;
             }
         }
-
-        async function updateUI(isAfterLoginRedirect = false) { // 【修改】增加參數
+        async function updateUI(isAfterLoginRedirect = false) { 
             if (!auth0Client) {
                 isUserLoggedIn = false; 
                 showLoginPage();
@@ -260,13 +267,11 @@
                 const isAuthenticated = await auth0Client.isAuthenticated();
                 if (isAuthenticated) {
                     if (isAfterLoginRedirect) {
-                        // 剛透過重新導向登入成功，正常顯示主頁面
                         isUserLoggedIn = true;
                         showMainPage(await auth0Client.getUser());
                     } else {
-                        // 偵測到現有會話 (非剛登入)，且要求每次重新登入，因此執行登出
                         console.log("偵測到現有 Auth0 會話，為確保重新登入，將執行登出。");
-                        doLogout(); // 這會重新導向到登出，然後回到登入頁
+                        doLogout(); 
                     }
                 } else {
                     isUserLoggedIn = false; 
@@ -278,10 +283,8 @@
                 showLoginPage();
             }
         }
-
         async function login() {
             if (!auth0Client) {
-                // ... (錯誤處理與先前相同)
                 console.error('Auth0 client not initialized for login');
                 if (authErrorDisplay) {
                     authErrorDisplay.textContent = 'Auth0 服務尚未準備就緒，請稍後再試。';
@@ -293,7 +296,7 @@
                 console.log('Attempting login with redirect (forcing re-authentication)...');
                 await auth0Client.loginWithRedirect({
                     authorizationParams: {
-                        prompt: 'login' // 【修改】強制要求使用者重新認證
+                        prompt: 'login' 
                     }
                 });
             } catch (e) {
@@ -304,7 +307,6 @@
                 }
             }
         }
-
         function doLogout() {
             isUserLoggedIn = false;
             clearTimeout(inactivityTimer);
@@ -314,6 +316,7 @@
 
             if (!auth0Client) {
                 console.error('Auth0 client not initialized for logout');
+                showLoginPage(); 
                 return;
             }
             try {
@@ -323,12 +326,14 @@
                 });
             } catch (e) {
                 console.error('Logout failed:', e);
-                // 即使 Auth0 JS SDK 的 logout 方法出錯，本地狀態也應清理
-                showLoginPage(); // 作為備援，確保回到登入頁
+                showLoginPage(); 
             }
         }
 
-        // --- 頁面顯示邏輯 ---
+        // 頁面顯示邏輯 (與先前相同)
+        function showLoginPage() { /* ... */ }
+        function showMainPage(user) { /* ... */ }
+        // --- (複製貼上上一版本的頁面顯示函數) ---
         function showLoginPage() {
             isUserLoggedIn = false; 
             clearTimeout(inactivityTimer);
@@ -347,7 +352,6 @@
             sheetData = { headers: [], data: [] }; 
             updateMoreDataHint(false); 
         }
-
         function showMainPage(user) {
             console.log("Showing Main Page for user:", user ? (user.name || user.email) : "Unknown");
             if (loginPage && mainPage) {
@@ -362,7 +366,7 @@
             }
         }
 
-        // --- Google Sheet 資料處理函數 (與先前相同) ---
+        // Google Sheet 資料處理函數 (與先前相同)
         function parseCSVLine(line) { /* ... */ }
         function parseCSV(csvText) { /* ... */ }
         async function fetchSheetData() { /* ... */ }
@@ -370,9 +374,7 @@
         function filterAndDisplayData() { /* ... */ }
         function escapeHTML(str) { /* ... */ }
         function displayResults(dataToDisplay) { /* ... */ }
-
-        // (為了簡潔，此處省略了這些函數的完整代碼，它們與您上一版相同)
-        // --- Google Sheet 資料處理函數 (複製貼上上一版本即可) ---
+        // --- (複製貼上上一版本的 Google Sheet 相關函數) ---
         function parseCSVLine(line) {
             const regex = /(?:\"([^\"]*(?:\"\"[^\"]*)*)\"|([^\",]+))/g;
             let values = []; let match;
@@ -381,7 +383,6 @@
             }
             return values;
         }
-
         function parseCSV(csvText) {
             if (typeof csvText !== 'string') { console.error("parseCSV 接收到的不是字串:", csvText); return { headers: [], data: [] }; }
             const lines = csvText.trim().split('\n'); const data = []; let headers = [];
@@ -399,14 +400,12 @@
             }
             return { headers, data };
         }
-        
         async function fetchSheetData() {
             if (!loadingIndicator || !generalErrorMessage || !resultsList) { console.error('fetchSheetData: UI 元素未找到!'); return; }
             loadingIndicator.classList.remove('hidden');
             generalErrorMessage.classList.add('hidden');
             resultsList.innerHTML = ''; 
             updateMoreDataHint(false); 
-
             try {
                 const response = await fetch(API_URL);
                 if (!response.ok) {
@@ -415,11 +414,9 @@
                 }
                 const csvText = await response.text();
                 sheetData = parseCSV(csvText);
-
                 if (!sheetData.headers || sheetData.headers.length === 0) {
                     throw new Error('無法解析表頭或工作表為空。');
                 }
-
                 if (sheetData.data.length === 0) {
                     displayResults([]); 
                 } else {
@@ -436,13 +433,11 @@
                 loadingIndicator.classList.add('hidden');
             }
         }
-
         function updateMoreDataHint(showHint, totalRows = 0, displayedRows = 0) {
             if (moreDataHintElement) {
                 moreDataHintElement.remove();
                 moreDataHintElement = null;
             }
-
             if (showHint && totalRows > displayedRows && displayedRows > 0) {
                 moreDataHintElement = document.createElement('p');
                 moreDataHintElement.textContent = `目前顯示 ${displayedRows} 筆資料，共 ${totalRows} 筆。請使用搜尋功能瀏覽或篩選所有資料。`;
@@ -452,16 +447,13 @@
                 }
             }
         }
-
         function filterAndDisplayData() {
             const searchTerm = searchInput.value.toLowerCase().trim();
-
             if (!sheetData || !sheetData.data) {
                 updateMoreDataHint(false);
                 resultsList.innerHTML = '<div class="no-results">資料尚未載入或載入失敗。</div>';
                 return;
             }
-            
             if (!searchTerm) {
                 if (sheetData.data.length === 0) {
                     displayResults([]);
@@ -478,16 +470,13 @@
                 updateMoreDataHint(false);
             }
         }
-
         function escapeHTML(str) {
             if (str === null || str === undefined) return '';
             return String(str).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
         }
-
         function displayResults(dataToDisplay) {
             resultsList.innerHTML = '';
             if (generalErrorMessage) generalErrorMessage.classList.add('hidden');
-
             if (dataToDisplay.length === 0) {
                 const isActiveSearch = searchInput.value.trim() !== "";
                 if (isActiveSearch) {
@@ -497,26 +486,20 @@
                 }
                 return;
             }
-
             const table = document.createElement('table');
             const thead = document.createElement('thead');
             let headerRowHtml = '<tr>';
             if (sheetData.headers && sheetData.headers.length > 0) {
-                sheetData.headers.forEach(header => {
-                    headerRowHtml += `<th>${escapeHTML(header)}</th>`;
-                });
+                sheetData.headers.forEach(header => { headerRowHtml += `<th>${escapeHTML(header)}</th>`; });
             }
             headerRowHtml += '</tr>';
             thead.innerHTML = headerRowHtml;
             table.appendChild(thead);
-
             const tbody = document.createElement('tbody');
             dataToDisplay.forEach(rowObject => {
                 let rowHtml = '<tr>';
                 if (sheetData.headers && sheetData.headers.length > 0) {
-                    sheetData.headers.forEach(header => {
-                        rowHtml += `<td>${escapeHTML(rowObject[header])}</td>`;
-                    });
+                    sheetData.headers.forEach(header => { rowHtml += `<td>${escapeHTML(rowObject[header])}</td>`; });
                 }
                 rowHtml += '</tr>';
                 tbody.innerHTML += rowHtml;
@@ -525,7 +508,38 @@
             resultsList.appendChild(table);
         }
 
-        // --- 事件監聽 (與先前相同) ---
+
+        // --- 事件監聽 ---
+        // 【修改】只保留阻止鍵盤快捷鍵複製的程式碼
+        if (resultsList) { // 確保 resultsList 元素已定義
+            document.addEventListener('keydown', function(event) {
+                let targetElement = event.target;
+                let isInResultsList = false;
+                // 檢查事件是否發生在 resultsList 內部
+                while (targetElement != null) {
+                    if (targetElement === resultsList) {
+                        isInResultsList = true;
+                        break;
+                    }
+                    targetElement = targetElement.parentElement;
+                }
+
+                if (isInResultsList) {
+                    // 防止複製 Ctrl+C / Cmd+C (keyCode 67 for 'C')
+                    if ((event.ctrlKey || event.metaKey) && (event.key === 'c' || event.key === 'C' || event.keyCode === 67)) {
+                        event.preventDefault();
+                        console.log("Copy (Ctrl/Cmd+C) prevented on table content.");
+                    }
+                    // 防止全選 Ctrl+A / Cmd+A (keyCode 65 for 'A')
+                    if ((event.ctrlKey || event.metaKey) && (event.key === 'a' || event.key === 'A' || event.keyCode === 65)) {
+                        event.preventDefault();
+                        console.log("Select All (Ctrl/Cmd+A) prevented on table content.");
+                    }
+                }
+            }, true); // 使用捕獲階段，以便更早攔截事件
+        }
+        // 【移除】移除了 resultsList.addEventListener('contextmenu', ...) 的程式碼
+
         if (auth0LoginButton) {
             auth0LoginButton.addEventListener('click', login);
         } else { console.error("'auth0LoginButton' not found."); }
@@ -544,7 +558,7 @@
         } else { console.error("'searchInput' not found."); }
 
 
-        // --- 應用程式初始化 ---
+        // --- 應用程式初始化 (與先前相同) ---
         window.addEventListener('load', async () => {
             console.log('Window loaded. Configuring Auth0 client...');
             
@@ -563,24 +577,22 @@
 
             if (auth0Client) {
                 const query = window.location.search;
-                const isRedirectCallback = query.includes("code=") && query.includes("state="); // 【修改】判斷是否為登入重新導向
+                const isRedirectCallback = query.includes("code=") && query.includes("state="); 
 
-                if (isRedirectCallback) { // 如果是從 Auth0 登入後重新導向回來
+                if (isRedirectCallback) { 
                     try {
                         await auth0Client.handleRedirectCallback();
                         console.log('Redirect callback handled.');
-                        window.history.replaceState({}, document.title, window.location.pathname); // 清理 URL
-                        // 此時 updateUI 將會被調用，且 isRedirectCallback 為 true
+                        window.history.replaceState({}, document.title, window.location.pathname); 
                     } catch (e) {
                         console.error('Error handling redirect callback:', e);
                         if (authErrorDisplay) {
                             authErrorDisplay.textContent = '處理登入回呼時發生錯誤: ' + e.message;
                             authErrorDisplay.classList.remove('hidden');
                         }
-                        // 即使回呼出錯，也嘗試更新UI（可能會顯示登入頁）
                     }
                 }
-                await updateUI(isRedirectCallback); // 【修改】將 isRedirectCallback 狀態傳入 updateUI
+                await updateUI(isRedirectCallback); 
             } else {
                 isUserLoggedIn = false; 
                 showLoginPage();
